@@ -121,7 +121,9 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "睿叮AI英语学习助手-v${version}-${arch}.${ext}"
+      "artifactName": "睿叮AI英语学习助手-v${version}-${arch}.${ext}",
+      "sign": false,
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,
