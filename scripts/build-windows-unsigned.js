@@ -1,29 +1,27 @@
 #!/usr/bin/env node
 
 // Windows构建脚本 - 禁用代码签名
-// 必须在require之前设置环境变量
-delete process.env.WIN_CSC_LINK;
-delete process.env.WIN_CSC_KEY_PASSWORD;
-delete process.env.CSC_LINK;
-delete process.env.CSC_KEY_PASSWORD;
-process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
-
 const { execSync } = require('child_process');
 const path = require('path');
 
-// 使用命令行方式构建，通过环境变量完全禁用签名
+// 准备环境变量
+const env = { ...process.env };
+// 删除所有签名相关的环境变量
+delete env.WIN_CSC_LINK;
+delete env.WIN_CSC_KEY_PASSWORD;
+delete env.CSC_LINK;
+delete env.CSC_KEY_PASSWORD;
+// 禁用自动发现签名证书
+env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+
+// 使用命令行方式构建
 try {
   console.log('🔨 开始构建Windows版本（无签名）...\n');
   
   execSync('npx electron-builder --win --x64', {
     cwd: path.join(__dirname, '..'),
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false',
-      WIN_CSC_LINK: '',
-      CSC_LINK: ''
-    }
+    env: env
   });
   
   console.log('\n✅ Windows构建完成！');
