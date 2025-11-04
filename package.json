@@ -33,6 +33,7 @@
       "electron/**/*",
       "frontend/**/*",
       "!frontend/node_modules",
+      "backend/**/*",
       "!**/*.map",
       "!**/test-*.js",
       "!**/.DS_Store",
@@ -47,7 +48,10 @@
         "from": "backend",
         "to": "backend",
         "filter": [
-          "**/*"
+          "**/*",
+          "!data/*.db",
+          "!data/*.db-shm",
+          "!data/*.db-wal"
         ]
       }
     ],
