@@ -1,0 +1,31 @@
+<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- 小叮的身体 - 蓝色信天翁 -->
+  <defs>
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4a5fc1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 身体 -->
+  <ellipse cx="40" cy="50" rx="20" ry="25" fill="url(#bodyGradient)"/>
+  
+  <!-- 头部 -->
+  <circle cx="40" cy="28" r="15" fill="url(#bodyGradient)"/>
+  
+  <!-- 白色胸部 -->
+  <ellipse cx="40" cy="50" rx="12" ry="18" fill="white"/>
+  
+  <!-- 眼睛 -->
+  <circle cx="35" cy="26" r="3" fill="white"/>
+  <circle cx="45" cy="26" r="3" fill="white"/>
+  <circle cx="35" cy="26" r="1.5" fill="#333"/>
+  <circle cx="45" cy="26" r="1.5" fill="#333"/>
+  
+  <!-- 黄色嘴巴 -->
+  <path d="M 40 30 L 48 32 L 40 34 Z" fill="#ffd700"/>
+  
+  <!-- 翅膀 -->
+  <ellipse cx="25" cy="45" rx="12" ry="8" fill="url(#bodyGradient)" transform="rotate(-20 25 45)"/>
+  <ellipse cx="55" cy="45" rx="12" ry="8" fill="url(#bodyGradient)" transform="rotate(20 55 45)"/>
+</svg>

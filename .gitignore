@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+build/
+
+# Large installer files (will be built by GitHub Actions)
+*.dmg
+*.exe
+*.zip
+*.tar.gz
+*.deb
+*.rpm
+
+# Logs
+*.log
+npm-debug.log*
+frontend.log
+backend.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+
+# Database
+backend/data/*.db
+backend/data/*.db-shm
+backend/data/*.db-wal
+
+# Electron
+out/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*-backup-*.js
+*-backup-*.html
+*-before-*.js
+*-before-*.html
+learning-*.js
+index-*.html
+paragraph-learning-backup*.js
+
+# Test files
+test-*.html
+
+# Build logs
+build-*.log
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory

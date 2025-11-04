@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付成功 - 睿叮AI英语学习助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .success-container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: bounce 1s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .message {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .order-info {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .order-info p {
+            margin: 10px 0;
+            color: #555;
+        }
+
+        .order-info strong {
+            color: #667eea;
+        }
+
+        .btn-home {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .countdown {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">🎉</div>
+        <h1>支付成功！</h1>
+        <p class="message">
+            恭喜您！订阅已激活，您现在可以享受全部功能了。
+        </p>
+
+        <div class="order-info" id="orderInfo">
+            <p><strong>订单信息</strong></p>
+            <p id="orderDetails">加载中...</p>
+        </div>
+
+        <a href="/index.html" class="btn-home">开始学习</a>
+        
+        <p class="countdown" id="countdown">3秒后自动跳转到主页...</p>
+    </div>
+
+    <script>
+        // 解析URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('out_trade_no');
+        const totalAmount = urlParams.get('total_amount');
+        const tradeNo = urlParams.get('trade_no');
+
+        // 显示订单信息
+        if (orderId && totalAmount) {
+            document.getElementById('orderDetails').innerHTML = `
+                <p>订单号: ${orderId}</p>
+                <p>支付金额: ¥${totalAmount}</p>
+                ${tradeNo ? `<p>交易号: ${tradeNo}</p>` : ''}
+            `;
+        } else {
+            document.getElementById('orderDetails').textContent = '订单信息获取中...';
+        }
+
+        // 倒计时自动跳转
+        let countdown = 3;
+        const countdownEl = document.getElementById('countdown');
+        
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                countdownEl.textContent = `${countdown}秒后自动跳转到主页...`;
+            } else {
+                clearInterval(timer);
+                window.location.href = '/index.html';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

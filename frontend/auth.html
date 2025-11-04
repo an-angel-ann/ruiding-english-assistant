@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - 睿叮AI英语学习助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .auth-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { font-size: 1.6em; color: #667eea; margin-bottom: 10px; }
+        .logo p { color: #666; font-size: 0.95em; }
+        .tabs { display: flex; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; }
+        .tab {
+            flex: 1; padding: 15px; text-align: center; cursor: pointer;
+            color: #999; font-weight: 600; transition: all 0.3s;
+            border-bottom: 3px solid transparent; margin-bottom: -2px;
+        }
+        .tab.active { color: #667eea; border-bottom-color: #667eea; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        .form-group input {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .verification-group {
+            display: flex; gap: 10px;
+        }
+        .verification-group input { flex: 1; }
+        .btn-code {
+            padding: 12px 20px; background: #667eea; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+            white-space: nowrap; font-weight: 600; transition: all 0.3s;
+        }
+        .btn-code:hover { background: #5568d3; }
+        .btn-code:disabled {
+            background: #ccc; cursor: not-allowed;
+        }
+        .btn-submit {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .error-message, .success-message {
+            padding: 12px; border-radius: 8px; margin-bottom: 15px;
+            display: none; animation: shake 0.5s;
+        }
+        .error-message {
+            background: #fee; color: #c33; border-left: 4px solid #e74c3c;
+        }
+        .success-message {
+            background: #efe; color: #3c3; border-left: 4px solid #2ecc71;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .form-content { display: none; }
+        .form-content.active { display: block; }
+        .info-box {
+            background: #f5f7ff; padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; color: #667eea; font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .info-box strong {
+            display: block; margin-bottom: 5px; color: #667eea;
+            font-size: 1.1em; font-weight: 600;
+        }
+        .pricing-info {
+            background: linear-gradient(135deg, #f5f7ff 0%, #e8ebff 100%);
+            padding: 20px; border-radius: 12px; margin-bottom: 20px;
+        }
+        .pricing-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        .pricing-item:last-child { border-bottom: none; }
+        .pricing-label { font-weight: 500; color: #333; }
+        .pricing-value {
+            font-weight: 700; color: #667eea; font-size: 1.3em;
+        }
+        .pricing-value.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <h1>🎓 睿叮AI英语学习助手</h1>
+            <p>学会了 就叮一下</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">登录</div>
+            <div class="tab" onclick="switchTab('register')">注册</div>
+            <div class="tab" onclick="switchTab('reset')">忘记密码</div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- 登录表单 -->
+        <div id="loginForm" class="form-content active">
+            <div class="info-box">
+                <strong>✨ 账号登录</strong>
+                欢迎回来！请输入您的登录信息
+            </div>
+
+            <div class="form-group">
+                <label for="loginEmail">邮箱</label>
+                <input type="email" id="loginEmail" placeholder="请输入您的邮箱">
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码（至少6位）">
+            </div>
+
+            <!-- 特殊账号API Key输入框 -->
+            <div id="apiKeyGroup" class="form-group" style="display: none;">
+                <label for="userApiKey">我的AI密钥 <span style="color: #f44336;">*</span></label>
+                <input type="text" id="userApiKey" placeholder="请输入您的AI密钥">
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                    💡 此账号需要使用您自己的AI密钥
+                </p>
+            </div>
+
+            <button class="btn-submit" onclick="handleLogin()">立即登录</button>
+            
+            <!-- 特殊账号提示 -->
+            <div id="specialAccountTip" style="display: none; margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <p style="color: #856404; font-size: 14px; margin: 0;">
+                    🔑 <strong>特殊账号模式</strong><br>
+                    您正在使用自带密钥的账号登录，所有AI功能将使用您提供的密钥。
+                </p>
+            </div>
+        </div>
+
+        <!-- 注册表单 -->
+        <div id="registerForm" class="form-content">
+            <div class="pricing-info">
+                <div class="pricing-item">
+                    <span class="pricing-label">🎁 免费试用</span>
+                    <span class="pricing-value highlight">3天</span>
+                </div>
+                <div class="pricing-item">
+                    <span class="pricing-label">⚡ 新客福利1元</span>
+                    <span class="pricing-value">1周</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="registerUsername">用户名（可选）</label>
+                <input type="text" id="registerUsername" placeholder="请输入用户名">
+            </div>
+
+            <div class="form-group">
+                <label for="registerEmail">邮箱 *</label>
+                <input type="email" id="registerEmail" placeholder="请输入您的邮箱">
+            </div>
+
+            <div class="form-group">
+                <label for="registerCode">邮箱验证码 *</label>
+                <div class="verification-group">
+                    <input type="text" id="registerCode" placeholder="请输入验证码" maxlength="6">
+                    <button class="btn-code" id="sendCodeBtn" onclick="sendVerificationCode()">
+                        获取验证码
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="registerPassword">密码 *</label>
+                <input type="password" id="registerPassword" placeholder="请设置密码（至少6位）">
+            </div>
+
+            <button class="btn-submit" onclick="handleRegister()">注册并开始3天免费体验</button>
+        </div>
+
+        <!-- 忘记密码表单 -->
+        <div id="resetForm" class="form-content">
+            <div class="info-box">
+                <strong>🔑 重置密码</strong>
+                输入您的邮箱，我们将发送验证码
+            </div>
+
+            <div class="form-group">
+                <label for="resetEmail">邮箱 *</label>
+                <input type="email" id="resetEmail" placeholder="请输入您的邮箱">
+            </div>
+
+            <div class="form-group">
+                <label for="resetCode">邮箱验证码 *</label>
+                <div class="verification-group">
+                    <input type="text" id="resetCode" placeholder="请输入验证码" maxlength="6">
+                    <button class="btn-code" id="sendResetCodeBtn" onclick="sendResetCode()">
+                        获取验证码
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="resetPassword">新密码 *</label>
+                <input type="password" id="resetPassword" placeholder="请设置新密码（至少6位）">
+            </div>
+
+            <button class="btn-submit" onclick="handleResetPassword()">重置密码</button>
+        </div>
+    </div>
+
+    <script src="device-fingerprint.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+        let countdown = 0;
+        let countdownTimer = null;
+
+        function switchTab(tab, targetElement) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // 如果是点击事件触发，使用event.target
+            if (typeof event !== 'undefined' && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // 如果是编程方式调用，手动查找对应的tab
+                const tabs = document.querySelectorAll('.tab');
+                tabs.forEach(t => {
+                    if ((tab === 'login' && t.textContent.includes('登录')) ||
+                        (tab === 'register' && t.textContent.includes('注册')) ||
+                        (tab === 'reset' && t.textContent.includes('忘记密码'))) {
+                        t.classList.add('active');
+                    }
+                });
+            }
+            
+            document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
+            const formId = tab === 'login' ? 'loginForm' : (tab === 'register' ? 'registerForm' : 'resetForm');
+            document.getElementById(formId).classList.add('active');
+            hideMessages();
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        async function sendVerificationCode() {
+            const email = document.getElementById('registerEmail').value.trim();
+            if (!validateEmail(email)) {
+                showError('请先输入正确的邮箱地址');
+                return;
+            }
+
+            const btn = document.getElementById('sendCodeBtn');
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/send-verification-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '发送失败');
+
+                showSuccess('✅ 验证码已发送到您的邮箱，请查收');
+                
+                countdown = 60;
+                countdownTimer = setInterval(() => {
+                    countdown--;
+                    btn.textContent = `${countdown}秒后重试`;
+                    if (countdown <= 0) {
+                        clearInterval(countdownTimer);
+                        btn.disabled = false;
+                        btn.textContent = '获取验证码';
+                    }
+                }, 1000);
+
+            } catch (error) {
+                showError(error.message);
+                btn.disabled = false;
+            }
+        }
+
+        async function handleLogin() {
+            console.log('🔐 开始登录流程');
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const userApiKey = document.getElementById('userApiKey').value.trim();
+            
+            console.log('   邮箱:', email);
+
+            // 特殊账号验证
+            const isSpecialAccount = email === 'ruiding.vip.user';
+            if (isSpecialAccount) {
+                console.log('   🔑 检测到特殊账号');
+                if (password !== 'forever') {
+                    showError('特殊账号密码错误');
+                    return;
+                }
+                if (!userApiKey || !userApiKey.startsWith('sk-')) {
+                    showError('请输入有效的AI密钥');
+                    return;
+                }
+                
+                // 验证AI密钥有效性
+                console.log('   🔍 验证AI密钥有效性...');
+                try {
+                    const testResponse = await fetch(`${API_BASE_URL}/v1/services/test-api-key`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ apiKey: userApiKey })
+                    });
+                    
+                    const testData = await testResponse.json();
+                    if (!testResponse.ok || !testData.valid) {
+                        showError('AI密钥无效或无法使用，请检查后重试');
+                        return;
+                    }
+                    console.log('   ✅ AI密钥验证通过');
+                } catch (error) {
+                    showError('AI密钥验证失败: ' + error.message);
+                    return;
+                }
+                
+                // 保存API Key并直接跳转
+                localStorage.setItem('userApiKey', userApiKey);
+                localStorage.setItem('isSpecialAccount', 'true');
+                console.log('   ✅ 特殊账号登录成功，跳转到主页...');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 普通账号登录流程
+            if (!validateEmail(email)) {
+                console.log('   ❌ 邮箱格式错误');
+                showError('请输入正确的邮箱地址');
+                return;
+            }
+
+            if (password.length < 6) {
+                console.log('   ❌ 密码长度不足');
+                showError('密码至少需要6位');
+                return;
+            }
+
+            try {
+                const deviceFp = await window.deviceFingerprint.generate();
+                console.log('   设备指纹:', deviceFp.substring(0, 20) + '...');
+                
+                console.log('   发送登录请求到:', `${API_BASE_URL}/auth/login`);
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, deviceFingerprint: deviceFp })
+                });
+
+                console.log('   响应状态:', response.status);
+                
+                // 尝试解析JSON，如果失败则使用文本
+                let data;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    data = { error: text };
+                }
+                console.log('   响应数据:', data);
+                
+                if (!response.ok) {
+                    console.log('   ❌ 登录失败:', data.error);
+                    throw new Error(data.error || '登录失败');
+                }
+
+                console.log('   ✅ 登录成功');
+                console.log('   用户信息:', data.user);
+                console.log('   用户角色:', data.user.role);
+                console.log('   订阅信息:', data.subscription);
+                
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('userInfo', JSON.stringify(data.user));
+                localStorage.removeItem('userApiKey'); // 清除可能存在的API Key
+                localStorage.removeItem('isSpecialAccount');
+                
+                console.log('   Token已保存到localStorage');
+                console.log('   验证Token:', localStorage.getItem('authToken') ? '存在' : '不存在');
+                
+                // 根据用户角色跳转
+                if (data.user.role === 'admin') {
+                    console.log('   → 立即跳转到管理员页面...');
+                    window.location.href = 'admin.html';
+                } else {
+                    console.log('   → 立即跳转到主页...');
+                    console.log('   目标URL: index.html');
+                    console.log('   ⚠️ 如果跳转后又回到登录页，请查看控制台的错误信息');
+                    window.location.href = 'index.html';
+                }
+
+            } catch (error) {
+                console.error('❌ 登录错误:', error);
+                showError(error.message);
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('registerEmail').value.trim();
+            const code = document.getElementById('registerCode').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const username = document.getElementById('registerUsername').value.trim();
+
+            if (!validateEmail(email)) {
+                showError('请输入正确的邮箱地址');
+                return;
+            }
+
+            if (!code || code.length !== 6) {
+                showError('请输入6位验证码');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('密码至少需要6位');
+                return;
+            }
+
+            try {
+                const deviceFp = await window.deviceFingerprint.generate();
+                
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        username: username || email.split('@')[0],
+                        verificationCode: code,
+                        deviceFingerprint: deviceFp
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '注册失败');
+
+                // 注册成功后不自动登录，让用户重新登录
+                // 这样可以确保用户进入正确的普通用户界面
+                alert(`🎉 注册成功！\n\n您已获得${data.trialDays || 3}天免费试用期。\n请使用您的邮箱和密码登录。`);
+                
+                // 切换到登录表单
+                switchTab('login');
+                
+                // 自动填充邮箱
+                document.getElementById('loginEmail').value = email;
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // 监听密码输入，验证特殊账号的邮箱密码后才显示API密钥输入框
+        async function checkSpecialAccountCredentials() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const apiKeyGroup = document.getElementById('apiKeyGroup');
+            const specialTip = document.getElementById('specialAccountTip');
+            
+            // 检查是否是特殊账号且邮箱密码都已填写
+            if (email === 'ruiding.vip.user' && password === 'forever') {
+                apiKeyGroup.style.display = 'block';
+                specialTip.style.display = 'block';
+            } else {
+                apiKeyGroup.style.display = 'none';
+                specialTip.style.display = 'none';
+            }
+        }
+        
+        // 监听邮箱和密码输入
+        document.getElementById('loginEmail').addEventListener('input', checkSpecialAccountCredentials);
+        document.getElementById('loginPassword').addEventListener('input', checkSpecialAccountCredentials);
+
+        // 倒计时函数
+        function startCountdown(btn) {
+            countdown = 60;
+            countdownTimer = setInterval(() => {
+                countdown--;
+                btn.textContent = `${countdown}秒后重试`;
+                if (countdown <= 0) {
+                    clearInterval(countdownTimer);
+                    btn.disabled = false;
+                    btn.textContent = '获取验证码';
+                }
+            }, 1000);
+        }
+
+        // 发送重置密码验证码
+        async function sendResetCode() {
+            const email = document.getElementById('resetEmail').value.trim();
+            if (!validateEmail(email)) {
+                showError('请先输入正确的邮箱地址');
+                return;
+            }
+
+            if (countdown > 0) {
+                return;
+            }
+
+            const btn = document.getElementById('sendResetCodeBtn');
+            btn.disabled = true;
+            btn.textContent = '发送中...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/send-reset-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message || '验证码已发送');
+                    startCountdown(btn);
+                } else {
+                    throw new Error(data.error || '发送失败');
+                }
+            } catch (error) {
+                showError(error.message);
+                btn.disabled = false;
+                btn.textContent = '获取验证码';
+            }
+        }
+
+        // 处理重置密码
+        async function handleResetPassword() {
+            const email = document.getElementById('resetEmail').value.trim();
+            const code = document.getElementById('resetCode').value.trim();
+            const newPassword = document.getElementById('resetPassword').value;
+
+            if (!validateEmail(email)) {
+                showError('请输入正确的邮箱地址');
+                return;
+            }
+
+            if (!code || code.length !== 6) {
+                showError('请输入6位验证码');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showError('密码至少需要6位');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        code,
+                        newPassword
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message || '密码重置成功，请使用新密码登录');
+                    
+                    // 清空重置表单
+                    document.getElementById('resetEmail').value = '';
+                    document.getElementById('resetCode').value = '';
+                    document.getElementById('resetPassword').value = '';
+                    
+                    // 2秒后切换到登录页面
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('loginEmail').value = email;
+                        document.getElementById('loginPassword').focus();
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || '重置密码失败');
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const activeForm = document.querySelector('.form-content.active');
+                if (activeForm.id === 'loginForm') {
+                    handleLogin();
+                } else if (activeForm.id === 'registerForm') {
+                    handleRegister();
+                } else if (activeForm.id === 'resetForm') {
+                    handleResetPassword();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

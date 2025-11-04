@@ -1,0 +1,85 @@
+name: Build macOS Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: 3.2.0)'
+        required: true
+        default: '3.2.0'
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          cd backend
+          npm install
+          cd ..
+      
+      - name: Build macOS ARM64
+        run: npm run build:mac-arm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build macOS Intel
+        run: npm run build:mac-intel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: List build output
+        run: |
+          echo "=== Build Output ==="
+          ls -lh dist/*.dmg dist/*.zip 2>/dev/null | grep -v blockmap || true
+          echo "=== File Sizes ==="
+          du -h dist/*.dmg dist/*.zip 2>/dev/null | grep -v blockmap || true
+      
+      - name: Upload ARM64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-${{ github.event.inputs.version || github.ref_name }}
+          path: |
+            dist/*-arm64.dmg
+            dist/*-arm64-mac.zip
+            dist/*-arm64.dmg.blockmap
+            dist/*-arm64-mac.zip.blockmap
+          retention-days: 30
+      
+      - name: Upload Intel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-intel-${{ github.event.inputs.version || github.ref_name }}
+          path: |
+            dist/睿叮AI英语学习助手-*.dmg
+            dist/睿叮AI英语学习助手-*-mac.zip
+            dist/睿叮AI英语学习助手-*.dmg.blockmap
+            dist/睿叮AI英语学习助手-*-mac.zip.blockmap
+          retention-days: 30
+      
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

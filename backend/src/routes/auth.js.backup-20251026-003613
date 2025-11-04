@@ -1,0 +1,178 @@
+const emailService = require('../utils/email-service');
+const express = require('express');
+const router = express.Router();
+const { body, validationResult } = require('express-validator');
+require('dotenv').config();
+
+// 根据配置加载对应的模型
+const USE_SQLITE = process.env.USE_SQLITE === 'true';
+const User = USE_SQLITE ? require('../models/User-sqlite') : require('../models/User');
+const Subscription = USE_SQLITE ? require('../models/Subscription-sqlite') : require('../models/Subscription');
+const { generateToken, authenticateToken } = require('../middleware/auth');
+
+// 注册
+router.post('/register', [
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 6 }),
+    body('username').optional().trim()
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { email, password, username } = req.body;
+
+        // 检查邮箱是否已存在
+        const existingUser = await User.findByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({ error: '该邮箱已被注册' });
+        }
+
+        // 创建用户
+        const userId = await User.create(email, password, username);
+
+        // 自动创建7天免费试用订阅
+        const trialDays = parseInt(process.env.FREE_TRIAL_DAYS) || 7;
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + trialDays);
+
+        await Subscription.create(userId, 'trial_3days', startDate, endDate);
+        await User.markTrialUsed(userId);
+
+        // 生成Token
+        const token = generateToken(userId, email);
+
+        res.status(201).json({
+            success: true,
+            message: '注册成功！您获得了3天免费试用',
+            token,
+            user: {
+                id: userId,
+                email,
+                username
+            },
+            trial: {
+                days: trialDays,
+                endDate
+            }
+        });
+    } catch (error) {
+        console.error('注册错误:', error);
+        res.status(500).json({ error: '注册失败，请稍后重试' });
+    }
+});
+
+// 登录
+router.post('/login', [
+    body('email').isEmail().normalizeEmail(),
+    body('password').notEmpty()
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { email, password } = req.body;
+
+        // 查找用户
+        const user = await User.findByEmail(email);
+        if (!user) {
+            return res.status(401).json({ error: '邮箱或密码错误' });
+        }
+
+        // 验证密码
+        const isValid = await User.verifyPassword(password, user.password_hash);
+        if (!isValid) {
+            return res.status(401).json({ error: '邮箱或密码错误' });
+        }
+
+        // 更新最后登录时间
+        await User.updateLastLogin(user.id);
+
+        // 检查订阅状态
+        const subscription = await Subscription.getActiveSubscription(user.id);
+
+        // 生成Token
+        const token = generateToken(user.id, user.email);
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                role: user.role,
+            },
+            subscription: subscription ? {
+                planType: subscription.plan_type,
+                endDate: subscription.end_date,
+                status: subscription.status
+            } : null
+        });
+    } catch (error) {
+        console.error('登录错误:', error);
+        res.status(500).json({ error: '登录失败，请稍后重试' });
+    }
+});
+
+// 获取当前用户信息（需要认证）
+router.get('/me', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const subscription = await Subscription.getActiveSubscription(req.user.id);
+
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                role: user.role,
+                createdAt: user.created_at,
+                lastLogin: user.last_login
+            },
+            subscription: subscription ? {
+                planType: subscription.plan_type,
+                startDate: subscription.start_date,
+                endDate: subscription.end_date,
+                status: subscription.status,
+                autoRenew: subscription.auto_renew
+            } : null
+        });
+    } catch (error) {
+        console.error('获取用户信息错误:', error);
+        res.status(500).json({ error: '获取用户信息失败' });
+    }
+});
+
+
+// 发送邮箱验证码
+router.post('/send-verification-code', [
+    body('email').isEmail().withMessage('请输入有效的邮箱')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { email } = req.body;
+        const ipAddress = req.ip;
+
+        const result = await emailService.sendVerificationCode(email, ipAddress);
+        
+        if (result.success) {
+            res.json({ success: true, message: result.message });
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+    } catch (error) {
+        console.error('发送验证码错误:', error);
+        res.status(500).json({ error: '发送验证码失败，请稍后重试' });
+    }
+});
+module.exports = router;

@@ -1,0 +1,164 @@
+{
+  "name": "ruiding-english-assistant",
+  "productName": "睿叮AI英语学习助手",
+  "version": "3.2.0",
+  "description": "基于AI的智能英语学习助手",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "rebuild": "npx @electron/rebuild",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac --universal",
+    "build:mac-intel": "electron-builder --mac --x64",
+    "build:mac-arm": "electron-builder --mac --arm64",
+    "build:win": "electron-builder --win --x64",
+    "build:all": "npm run rebuild && electron-builder --mac --win --universal",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.ruiding.english.assistant",
+    "productName": "睿叮AI英语学习助手",
+    "copyright": "Copyright © 2025 Ruiding",
+    "nodeGypRebuild": false,
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/**/*",
+      "!frontend/node_modules",
+      "!**/*.map",
+      "!**/test-*.js",
+      "!**/.DS_Store",
+      "!**/database.sqlite"
+    ],
+    "asarUnpack": [
+      "frontend/**/*",
+      "**/*.node"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!data/*.db",
+          "!data/*.sqlite",
+          "!**/*.db",
+          "!**/*.sqlite"
+        ]
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.education",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "type": "distribution",
+      "minimumSystemVersion": "10.13.0",
+      "darkModeSupport": true,
+      "x64ArchFiles": "**/node_modules/{bcrypt,better-sqlite3,fsevents}/**/*"
+    },
+    "dmg": {
+      "title": "睿叮AI英语学习助手 v3.2.0",
+      "icon": "build/icon.icns",
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 380,
+          "y": 180,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 180,
+          "type": "file"
+        },
+        {
+          "x": 255,
+          "y": 340,
+          "type": "file",
+          "path": "build/安装说明.txt"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 480
+      },
+      "backgroundColor": "#ffffff"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "睿叮AI英语学习助手-v${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "睿叮AI英语学习助手",
+      "language": "2052",
+      "warningsAsErrors": false
+    },
+    "portable": {
+      "artifactName": "睿叮AI英语学习助手-v${version}-portable.exe"
+    },
+    "afterPack": "./scripts/afterPack.js",
+    "publish": null
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "author": {
+    "name": "Ruiding",
+    "email": "o_oangela@126.com"
+  },
+  "license": "Proprietary",
+  "homepage": "https://ruiding.online"
+}

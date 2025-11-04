@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>睿叮AI英语学习助手</title>
+    <link rel="stylesheet" href="styles.css?v=7.14">
+</head>
+<style>
+/* 优雅的菜单按钮样式 */
+.logout-btn-content {
+    padding: 20px !important;
+    min-width: 300px !important;
+}
+
+.logout-btn-content a,
+.logout-btn-content button {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.logout-btn-content a:last-of-type,
+.logout-btn-content button:last-of-type {
+    margin-bottom: 0;
+}
+
+.logout-btn-content .btn-logout {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    margin-top: 4px;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+/* 悬停效果 */
+.logout-btn-content a:hover,
+.logout-btn-content button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.logout-btn-content .btn-logout:hover {
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.5);
+}
+
+/* 点击效果 */
+.logout-btn-content a:active,
+.logout-btn-content button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* 语音选择器样式 */
+.voice-selector {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.voice-selector-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+}
+
+.voice-selector:hover .voice-selector-icon {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.voice-selector-content {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    min-width: 280px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.voice-selector-content.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+</style>
+<body>
+    <div class="container">
+        <!-- 语音选择器（固定在左上角） -->
+        <div id="voiceSelector" class="voice-selector" style="display: none;">
+            <div class="voice-selector-icon" onclick="toggleVoicePanel()">🔊</div>
+            <div class="voice-selector-content" id="voiceSelectorContent">
+                <h4 style="margin: 0 0 12px 0; color: #667eea; font-size: 14px;">选择发音</h4>
+                <select id="voiceSelect" onchange="changeVoice()" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; margin-bottom: 10px;">
+                    <option value="">加载中...</option>
+                </select>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button onclick="testVoice()" style="flex: 1; padding: 6px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">试听</button>
+                    <button onclick="closeVoicePanel()" style="flex: 1; padding: 6px; background: #e0e0e0; color: #666; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">关闭</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 登出按钮（固定在右上角 - 圆形设计） -->
+        <div id="logoutButton" class="logout-btn" style="display: none;" data-menu-initialized="true">
+            <div class="logout-btn-icon">👤</div>
+            <div class="logout-btn-content">
+                <span id="userEmailDisplay"></span>
+                <a href="/subscription.html" class="btn-subscription">💎 会员订阅</a>
+                <button onclick="showDeviceManager()" class="btn-subscription" style="margin-top: 5px;">📱 设备管理</button>
+                <button onclick="window.location.href='/index.html'" class="btn-subscription" style="margin-top: 5px;">🏠 返回主页</button>
+                <button onclick="handleLogout()" class="btn-logout">登出</button>
+            </div>
+        </div>
+
+        <!-- API Key 配置面板 -->
+        <div id="apiKeyPanel" class="panel subscription-panel" style="display: none;" data-menu-initialized="true">
+            <div class="subscription-content">
+                <div class="subscription-icon">🎓</div>
+                <h1 class="subscription-title">睿叮AI英语学习助手</h1>
+                
+                <h2 class="subscription-heading">开启AI智能学习</h2>
+                
+                <div class="subscription-feature">
+                    <div class="feature-highlight">💎 订阅会员即可解锁全部AI功能</div>
+                    <p class="feature-desc">享受智能分析、个性化学习路径、优先支持等特权</p>
+                </div>
+                
+                <div class="subscription-cta">
+                    <a href="/subscription.html" class="btn-subscribe-main">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">立即订阅会员</span>
+                    </a>
+                </div>
+                
+                <p class="subscription-trial">新用户注册即享7天免费体验</p>
+            </div>
+        </div>
+
+        <!-- 模式选择面板 -->
+        <div id="modeSelectionPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <a id="modes" style="position: relative; top: -80px; display: block;"></a>
+            <h1>🎓 选择学习模式</h1>
+            <div class="mode-selection">
+                <div class="mode-card" onclick="selectMode('sentence')">
+                    <div class="mode-icon">📖</div>
+                    <h2>句子学习</h2>
+                    <p>上传英语材料，进行句子分析、词义辨别、结构分析和句子重组练习</p>
+                    <div class="mode-badge">原功能</div>
+                </div>
+                <div class="mode-card" onclick="selectMode('word')">
+                    <div class="mode-icon">📚</div>
+                    <h2>单词学习</h2>
+                    <p>上传单词，通过故事记忆法学习单词，掌握词义、词性和用法</p>
+                    <div class="mode-badge new-badge">新功能</div>
+                </div>
+                <div class="mode-card" onclick="selectMode('paragraph')">
+                    <div class="mode-icon">📄</div>
+                    <h2>段落学习</h2>
+                    <p>上传英语段落或文章，进行句义辨别、结构分析和段落重组练习</p>
+                    <div class="mode-badge new-badge">新功能</div>
+                </div>
+                <div class="mode-card mode-card-coming-soon">
+                    <div class="mode-icon">🚀</div>
+                    <h2>敬请期待</h2>
+                    <p>更多精彩功能正在开发中</p>
+                    <p>敬请期待...</p>
+                    <div class="mode-badge coming-soon-badge">Coming Soon</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤一：材料导入（句子学习） -->
+        <div id="uploadPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📸 步骤一：上传学习材料</h2>
+            <p style="color: #666; margin-bottom: 20px;">请选择以下任一方式提供英语句子</p>
+            
+            <!-- 方式一：上传图片 -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #667eea; font-size: 16px; margin-bottom: 15px;">📷 方式一：上传图片</h3>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;" data-menu-initialized="true">
+                    <div class="upload-prompt">
+                        <p>点击或拖拽上传英语句子照片</p>
+                        <p style="font-size: 0.9em; color: #999;">支持 JPG、PNG 等图片格式</p>
+                    </div>
+                </div>
+                <div id="previewArea"></div>
+            </div>
+            
+            <!-- 方式二：粘贴文本 -->
+            <div>
+                <h3 style="color: #667eea; font-size: 16px; margin-bottom: 15px;">📝 方式二：粘贴文本</h3>
+                <textarea id="sentenceTextInput" 
+                          placeholder="请在此粘贴英语句子..." 
+                          style="width: 100%; min-height: 150px; padding: 15px; border: 2px solid #667eea30; border-radius: 10px; font-size: 15px; line-height: 1.8; resize: vertical; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;"></textarea>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="analyzeSentenceFromText()" class="btn-primary" style="padding: 12px 30px; font-size: 16px;">开始分析</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 翻译结果展示 -->
+        <div id="translationPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📖 原文与翻译</h2>
+            <div id="translationResult"></div>
+            <button onclick="startLearning()" class="btn-primary">开始逐句学习</button>
+        </div>
+
+        <!-- 步骤二：句子分析学习 -->
+        <div id="learningPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p class="progress-text">句子 <span id="currentSentence">1</span> / <span id="totalSentences">0</span></p>
+            
+            <!-- 词义辨别 -->
+            <div id="wordMatchingSection" class="learning-section">
+                <h3>🔤 词义辨别</h3>
+                
+                <!-- 原句参考 -->
+                <div class="sentence-reference">
+                    <div class="reference-header">📖 原句参考</div>
+                    <div class="reference-content">
+                        <div class="english-sentence">
+                            <span id="referenceSentenceEn"></span>
+                            <button onclick="speakSentence()" class="speak-btn" title="朗读句子">🔊</button>
+                        </div>
+                        <div class="chinese-sentence" id="referenceSentenceCn"></div>
+                    </div>
+                </div>
+                
+                <p class="instruction">将下方的中文词义拖拽到对应的英文单词下方（点击🔊可朗读单词）</p>
+                <div id="englishWords" class="word-container"></div>
+                <div id="chineseWords" class="word-container draggable-words"></div>
+                <button onclick="checkWordMatching()" class="btn-check">检查答案</button>
+                <button onclick="nextToStructure()" class="btn-next" style="display: none;" data-menu-initialized="true">下一步：结构分析</button>
+            </div>
+
+            <!-- 结构分析 -->
+            <div id="structureSection" class="learning-section" style="display: none;" data-menu-initialized="true">
+                <h3>🏗️ 句子结构分析</h3>
+                <p class="instruction">将左侧的英文句子成分拖拽到右侧对应的语法成分框中</p>
+                <div class="structure-layout">
+                    <div class="structure-left">
+                        <h4>📝 句子成分</h4>
+                        <div id="sentenceParts" class="word-container draggable-words"></div>
+                    </div>
+                    <div class="structure-right">
+                        <h4>🎯 语法框</h4>
+                        <div id="structureSlots" class="structure-container"></div>
+                    </div>
+                </div>
+                <button onclick="checkStructure()" class="btn-check">检查答案</button>
+                <button onclick="nextToReorder()" class="btn-next" style="display: none;" data-menu-initialized="true">下一步：句子重组</button>
+            </div>
+
+            <!-- 句子重组 -->
+            <div id="reorderSection" class="learning-section" style="display: none;" data-menu-initialized="true">
+                <h3>🔄 句子重组</h3>
+                <p class="instruction">根据中文释义，将打散的英文重新组合成原句</p>
+                <p class="instruction" style="color: #ff9800; font-size: 0.9em;">💡 提示：只需排列单词顺序，不需要添加标点符号</p>
+                <div id="chineseHint" class="chinese-hint"></div>
+                <div id="reorderAnswer" class="reorder-answer" data-placeholder="将单词拖拽到这里组成句子"></div>
+                <div id="scrambledWords" class="word-container draggable-words"></div>
+                <button onclick="checkReorder()" class="btn-check">检查答案</button>
+                <button onclick="nextSentence()" class="btn-next" style="display: none;" data-menu-initialized="true">下一句</button>
+            </div>
+        </div>
+
+        <!-- 步骤四：生词本复习 -->
+        <div id="vocabularyPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📚 生词本复习</h2>
+            <div id="vocabularyList"></div>
+            <button onclick="startVocabReview()" class="btn-primary">开始复习</button>
+        </div>
+
+        <!-- 生词复习界面 - 遮盖式 -->
+        <div id="reviewPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📖 生词本复习</h2>
+            <p class="instruction">回忆单词意思，点击卡片查看答案</p>
+            <div class="vocab-progress">
+                <span>剩余: <strong id="remainingCount">0</strong> 个</span>
+                <span>已掌握: <strong id="masteredCount">0</strong> 个</span>
+            </div>
+            
+            <div class="vocab-card-flip">
+                <div class="vocab-card-front" id="vocabFront">
+                    <div class="vocab-word" id="vocabWord"></div>
+                    <button class="flip-hint" id="flipCardBtn">点击查看答案 👇</button>
+                </div>
+                
+                <div class="vocab-card-back" id="vocabBack" style="display: none;" data-menu-initialized="true">
+                    <div class="vocab-answer" id="vocabMeaning"></div>
+                    <div class="vocab-buttons">
+                        <button id="notRememberBtn" class="btn-not-remember">❌ 没记住</button>
+                        <button id="rememberBtn" class="btn-remember">✅ 记住了</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ========== 单词学习功能 ========== -->
+        
+        <!-- 单词学习-步骤一：输入单词 -->
+        <div id="wordUploadPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📝 步骤一：输入学习单词</h2>
+            <p style="color: #666; margin-bottom: 20px;">请选择以下任一方式提供英语单词</p>
+            
+            <!-- 方式一：上传图片 -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #667eea; font-size: 16px; margin-bottom: 15px;">📷 方式一：上传图片</h3>
+                <div class="upload-area" id="wordUploadArea">
+                    <input type="file" id="wordImageInput" accept="image/*" style="display: none;">
+                    <div class="upload-prompt">
+                        <p>点击或拖拽上传单词列表照片</p>
+                        <p style="font-size: 0.9em; color: #999;">支持 JPG、PNG 等图片格式</p>
+                        <p style="font-size: 0.85em; color: #ff9800; margin-top: 8px;">⚠️ 最多识别20个单词，超出部分将自动忽略</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 方式二：手动输入 -->
+            <div>
+                <h3 style="color: #667eea; font-size: 16px; margin-bottom: 15px;">✍️ 方式二：手动输入</h3>
+                <div class="word-input-container">
+                    <p class="instruction">请输入要学习的英文单词，每行一个单词，最多20个</p>
+                    <textarea id="wordInputArea" placeholder="例如：&#10;apple&#10;banana&#10;cat&#10;dog&#10;..."></textarea>
+                    <div class="word-count-info">
+                        <span id="wordCountDisplay">已输入 0 个单词</span>
+                        <span class="word-limit-hint">（最多20个）</span>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button id="wordStartBtn" onclick="startWordLearning()" class="btn-primary" style="padding: 12px 30px; font-size: 16px;">开始学习</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 单词学习-步骤二：故事单词记忆 -->
+        <div id="storyPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📖 步骤二：故事单词记忆</h2>
+            <div class="story-container">
+                <div class="story-section">
+                    <h3>🇨🇳 中文故事</h3>
+                    <div id="chineseStory" class="story-content"></div>
+                </div>
+                <div class="story-section">
+                    <h3>🇬🇧 英文故事</h3>
+                    <div id="englishStory" class="story-content"></div>
+                </div>
+            </div>
+            <button onclick="nextToEnglishToChinese()" class="btn-primary">下一步：记忆检测</button>
+        </div>
+
+        <!-- 单词学习-步骤三：单词记忆检测 -->
+        <div id="englishToChinesePanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📝 步骤三：单词记忆检测</h2>
+            <p class="instruction">💡 点击英文单词可查看中文释义，再次点击恢复英文</p>
+            <div id="en2cnStory" class="practice-story"></div>
+            <div class="encouragement-buttons">
+                <button onclick="showWordEncouragement('en2cn')" class="btn-check">✅ 英译中我全记住了</button>
+                <button onclick="showWordEncouragement('cn2en')" class="btn-check">✅ 中译英我全记住了</button>
+            </div>
+            <button onclick="finishWordLearning()" class="btn-primary">下一步：学习总结</button>
+        </div>
+
+        <!-- 单词学习-步骤四：生词本总结 -->
+        <div id="wordSummaryPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>📚 步骤四：学习内容总结</h2>
+            <div id="wordSummaryList" class="vocabulary-summary"></div>
+            <div class="export-section">
+                <h3>📝 导出学习成果</h3>
+                <p>将所有单词导出为文档，方便打印复习</p>
+                <button onclick="exportWordLearning()" class="btn-export">📥 导出为文档</button>
+            </div>
+            <div class="return-home-section">
+                <button onclick="returnToHome()" class="btn-home">🏠 返回主页</button>
+            </div>
+        </div>
+
+        <!-- 完成界面 - 导出学习成果 -->
+        <div id="completionPanel" class="panel" style="display: none;" data-menu-initialized="true">
+            <h2>🎉 恭喜完成所有学习！</h2>
+            <div class="completion-summary">
+                <h3>📊 学习统计</h3>
+                <p>学习句子：<strong id="totalSentencesLearned">0</strong> 句</p>
+                <p>掌握单词：<strong id="totalWordsMastered">0</strong> 个</p>
+            </div>
+            
+            <div class="review-content" id="reviewContent" style="display: none;" data-menu-initialized="true">
+                <h3>📚 学习内容预览</h3>
+                <div id="sentencesReview"></div>
+                <div id="vocabularyReview"></div>
+            </div>
+            
+            <div class="export-section">
+                <h3>📝 导出学习成果</h3>
+                <p>将所有句子和单词导出为文档，方便打印复习</p>
+                <button onclick="exportToWord()" class="btn-export">📥 导出为文档</button>
+            </div>
+            
+            <div class="return-home-section">
+                <button onclick="returnToHome()" class="btn-home">🏠 返回主页</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤一：上传材料 -->
+        <div id="paragraphUploadPanel" class="panel" style="display: none;">
+            <h2>📸 步骤一：上传学习材料</h2>
+            <p style="color: #666; margin-bottom: 20px;">请选择以下任一方式提供英语段落或文章</p>
+            
+            <!-- 方式一：上传图片 -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #667eea; font-size: 16px; margin-bottom: 15px;">📷 方式一：上传图片</h3>
+                <div class="upload-area" id="paragraphUploadArea">
+                    <input type="file" id="paragraphImageInput" accept="image/*" style="display: none;">
+                    <div class="upload-prompt">
+                        <p>点击或拖拽上传英语段落照片</p>
+                        <p style="font-size: 0.9em; color: #999;">支持 JPG、PNG 等图片格式</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 方式二：粘贴文本 -->
+            <div>
+                <h3 style="color: #667eea; font-size: 16px; margin-bottom: 15px;">📝 方式二：粘贴文本</h3>
+                <textarea id="paragraphTextInput" 
+                          placeholder="请在此粘贴英语段落或文章..." 
+                          style="width: 100%; min-height: 200px; padding: 15px; border: 2px solid #667eea30; border-radius: 10px; font-size: 15px; line-height: 1.8; resize: vertical; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;"></textarea>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="analyzeParagraphFromText()" class="btn-primary" style="padding: 12px 30px; font-size: 16px;">开始分析</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤一：通篇浏览 -->
+        <div id="paragraphOverviewPanel" class="panel" style="display: none;">
+            <h2>👀 步骤一：通篇浏览</h2>
+            <p style="color: #666; margin-bottom: 20px;">请先通读整篇英文原文，了解文章大意</p>
+            <div id="paragraphFullText" style="max-width: 800px; margin: 0 auto; padding: 30px; background: #f8f9ff; border-radius: 12px; border: 2px solid #667eea30; line-height: 2; font-size: 16px; color: #333;"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="startParagraphLearning()" class="btn-next">开始学习</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤二：句义辨别 -->
+        <div id="paragraphMeaningPanel" class="panel" style="display: none;">
+            <div class="progress-bar">
+                <div id="paragraphMeaningProgressFill" class="progress-fill"></div>
+            </div>
+            <p class="progress-text">段落 <span id="paragraphMeaningCurrent">1</span> / <span id="paragraphMeaningTotal">0</span></p>
+            <h2>🔤 步骤二：句义辨别</h2>
+            <p style="color: #666; margin-bottom: 20px;">将下方的中文翻译拖拽到对应的英文句子下方，点击选中不认识的生词（会标红）</p>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div id="paragraphEnglishSentences"></div>
+                <div id="paragraphChineseOptions"></div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="checkMeaningAnswers()" class="btn-check">检查答案</button>
+                <button id="meaningNextBtn" onclick="nextToStructureAnalysis()" class="btn-next" style="display: none;">下一步：结构分析</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤三：段落结构分析 -->
+        <div id="paragraphStructurePanel" class="panel" style="display: none;">
+            <div class="progress-bar">
+                <div id="paragraphStructureProgressFill" class="progress-fill"></div>
+            </div>
+            <p class="progress-text">段落 <span id="paragraphStructureCurrent">1</span> / <span id="paragraphStructureTotal">0</span></p>
+            <h2>🏗️ 步骤三：段落结构分析</h2>
+            <p style="color: #666; margin-bottom: 20px;">为每个句子选择对应的句群（每个句子只能选择一个句群）</p>
+            <div style="display: flex; gap: 20px;">
+                <!-- 左侧：句子列表（70%） -->
+                <div style="flex: 7;">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">📝 句子分析</h3>
+                    <div id="sentenceAnalysisList"></div>
+                </div>
+                
+                <!-- 右侧：句群概要（30%） -->
+                <div style="flex: 3;">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">🎯 句群概要</h3>
+                    <div id="sectionSummaryList"></div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="checkStructureAnswers()" class="btn-check">检查答案</button>
+                <button id="structureNextBtn" onclick="nextToParagraphReview()" class="btn-next" style="display: none;">下一步：段落自查</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤四：段落自查 -->
+        <div id="paragraphReviewPanel" class="panel" style="display: none;">
+            <div class="progress-bar">
+                <div id="paragraphReviewProgressFill" class="progress-fill"></div>
+            </div>
+            <p class="progress-text">段落 <span id="paragraphReviewCurrent">1</span> / <span id="paragraphReviewTotal">0</span></p>
+            <h2>🔄 步骤四：段落自查</h2>
+            <p style="color: #666; margin-bottom: 20px;">拖拽句子，将它们排列成正确的顺序</p>
+            <div id="paragraphReviewSentences"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="checkReviewAnswers()" class="btn-check">检查答案</button>
+                <button id="reviewNextBtn" onclick="nextParagraphOrFinish()" class="btn-next" style="display: none;">下一段 →</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤五：段落总结 -->
+        <div id="paragraphSummaryPanel" class="panel" style="display: none;">
+            <h2>📝 步骤五：段落总结</h2>
+            <p style="color: #666; margin-bottom: 20px;">将左侧段落与右侧对应的段落大意进行匹配</p>
+            <div id="summaryMatching"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="checkSummaryAnswers()" class="btn-check">检查答案</button>
+                <button id="summaryNextBtn" onclick="nextToComprehensionOrNextParagraph()" class="btn-next" style="display: none;">下一步：段落理解</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-步骤六：段落理解 -->
+        <div id="paragraphComprehensionPanel" class="panel" style="display: none;">
+            <h2>🧠 步骤六：段落理解</h2>
+            <p style="color: #666; margin-bottom: 20px;">根据段落内容回答以下问题</p>
+            <div id="comprehensionQuestions"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="checkComprehensionAnswers()" class="btn-check">检查答案</button>
+                <button id="comprehensionNextBtn" onclick="finishParagraphLearning()" class="btn-next" style="display: none;">完成学习</button>
+            </div>
+        </div>
+
+        <!-- 段落学习-完成页面 -->
+        <div id="paragraphCompletionPanel" class="panel" style="display: none;">
+            <h2>🎉 恭喜完成所有学习！</h2>
+            <div class="completion-summary">
+                <h3>📊 学习统计</h3>
+                <p>学习段落：<strong id="totalParagraphsLearned">0</strong> 段</p>
+                <p>掌握单词：<strong id="totalVocabularyMastered">0</strong> 个</p>
+            </div>
+            
+            <div class="review-content">
+                <h3>📚 段落结构分析</h3>
+                <div id="paragraphReviewContent"></div>
+            </div>
+            
+            <div class="review-content">
+                <h3>📖 生词本</h3>
+                <div id="paragraphVocabularyReview"></div>
+            </div>
+            
+            <div class="export-section">
+                <h3>📝 导出学习成果</h3>
+                <p>将段落分析和单词导出为文档，方便打印复习</p>
+                <button onclick="exportParagraphLearning()" class="btn-export">📥 导出为文档</button>
+            </div>
+            
+            <div class="return-home-section">
+                <button onclick="returnToHome()" class="btn-home">🏠 返回主页</button>
+            </div>
+        </div>
+
+        <!-- 鼓励动画 -->
+        <div id="encouragement" class="encouragement"></div>
+        
+        <!-- 悬浮生词本 -->
+        <div id="floatingVocabBall" style="display: none; position: fixed; right: 30px; top: 50%; transform: translateY(-50%); z-index: 9999;">
+            <div class="vocab-ball" onclick="toggleVocabPanel()" style="width: 65px; height: 65px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4); transition: all 0.3s; animation: vocabFloat 3s ease-in-out infinite;">
+                <span style="color: white; font-size: 28px; pointer-events: none;">📚</span>
+            </div>
+            <div id="floatingVocabPanel" style="display: none; position: absolute; right: 80px; top: 0; width: 300px; max-height: 400px; overflow-y: auto; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 15px; opacity: 0; transform: translateX(20px); transition: all 0.3s ease-out;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                    <h4 style="color: #f5576c; margin: 0; font-size: 16px; font-weight: 600;">📚 生词本</h4>
+                    <button onclick="toggleVocabPanel()" style="background: none; border: none; color: #999; cursor: pointer; font-size: 20px; padding: 0; line-height: 1;">×</button>
+                </div>
+                <div id="floatingVocabList"></div>
+            </div>
+        </div>
+        <style>
+            @keyframes vocabFloat {
+                0%, 100% { transform: translateY(-50%) translateX(0); }
+                50% { transform: translateY(-50%) translateX(-5px); }
+            }
+            .vocab-ball:hover {
+                transform: scale(1.1) rotate(5deg);
+                box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
+            }
+            #floatingVocabPanel.active {
+                display: block !important;
+                opacity: 1 !important;
+                transform: translateX(0) !important;
+            }
+        </style>
+    </div>
+
+    <!-- 全局变量 -->
+    <script src="api-client.js?t=20251103170200"></script>
+    <script src="app.js?t=20251103173200"></script>
+    <script src="learning.js?v=7.13"></script>
+    <script src="word-learning.js?t=20251103105700"></script>
+    <script src="paragraph-learning.js?t=20251103130300"></script>
+</body>
+<script>
+// ========== 语音系统 ==========
+let selectedVoice = null;
+let voiceRate = 1.0;
+let voicePitch = 1.0;
+let allVoices = [];
+
+// 初始化语音
+function initVoices() {
+    return new Promise((resolve) => {
+        let voices = speechSynthesis.getVoices();
+        
+        if (voices.length > 0) {
+            allVoices = voices;
+            selectBestVoice(voices);
+            populateVoiceSelector(voices);
+            resolve(voices);
+        } else {
+            speechSynthesis.onvoiceschanged = () => {
+                voices = speechSynthesis.getVoices();
+                allVoices = voices;
+                selectBestVoice(voices);
+                populateVoiceSelector(voices);
+                resolve(voices);
+            };
+        }
+    });
+}
+
+// 填充语音选择器
+function populateVoiceSelector(voices) {
+    const voiceSelect = document.getElementById('voiceSelect');
+    if (!voiceSelect) return;
+    
+    voiceSelect.innerHTML = '';
+    
+    // 分类语音
+    const categories = {
+        '美式英语': [],
+        '英式英语': [],
+        '趣味发音': [],
+        '其他发音': []
+    };
+    
+    // 美式英语白名单（按顺序）
+    const allowedUSVoices = ['Aaron', 'Nicky', 'Samantha', 'Fred', 'Alex', 'Google US English', 'Google', 'Microsoft'];
+    // 英式英语白名单（按顺序）
+    const allowedGBVoices = ['Arthur', 'Daniel', 'Martha', 'Oliver', 'Google UK English', 'Google', 'Microsoft'];
+    // 趣味发音名单
+    const funVoices = ['Bubbles', 'Trinoids', 'Zarvox'];
+    // 其他发音名单
+    const allowedOtherVoices = ['Catherine', 'Gordon', 'Moira', 'Karen', 'Fiona', 'Tessa'];
+    
+    // 调试：打印所有英语语音
+    console.log('🔍 可用的英语语音列表:');
+    const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+    console.log(`总共找到 ${englishVoices.length} 个英语语音`);
+    englishVoices.forEach(v => {
+        console.log(`  - ${v.name} (${v.lang}) ${v.localService ? '[本地]' : '[在线]'}`);
+    });
+    
+    // 特别检查Google语音
+    const googleVoices = voices.filter(v => v.name.toLowerCase().includes('google'));
+    console.log(`🔍 找到 ${googleVoices.length} 个Google语音:`);
+    googleVoices.forEach(v => {
+        console.log(`  - ${v.name} (${v.lang})`);
+    });
+    
+    voices.forEach((voice, index) => {
+        if (!voice.lang.startsWith('en')) return;
+        
+        // 检查是否是趣味发音
+        const isFunVoice = funVoices.some(name => voice.name.includes(name));
+        if (isFunVoice) {
+            categories['趣味发音'].push({voice, index});
+            return;
+        }
+        
+        // 检查是否是允许的美式英语（使用更宽松的匹配）
+        const isAllowedUS = allowedUSVoices.some(name => {
+            const voiceLower = voice.name.toLowerCase();
+            const nameLower = name.toLowerCase();
+            
+            // 对于Google语音，只匹配关键词
+            if (nameLower.includes('google')) {
+                return voiceLower.includes('google') && 
+                       (voiceLower.includes('us') || voiceLower.includes('united states') || 
+                        (voice.lang.includes('en-US') && !voiceLower.includes('uk') && !voiceLower.includes('british')));
+            }
+            // 对于Microsoft语音
+            if (nameLower.includes('microsoft')) {
+                return voiceLower.includes('microsoft') && 
+                       (voiceLower.includes('us') || voice.lang.includes('en-US'));
+            }
+            return voice.name.includes(name);
+        });
+        if (isAllowedUS) {
+            categories['美式英语'].push({voice, index});
+            return;
+        }
+        
+        // 检查是否是允许的英式英语（使用更宽松的匹配）
+        const isAllowedGB = allowedGBVoices.some(name => {
+            const voiceLower = voice.name.toLowerCase();
+            const nameLower = name.toLowerCase();
+            
+            // 对于Google语音，只匹配关键词
+            if (nameLower.includes('google')) {
+                return voiceLower.includes('google') && 
+                       (voiceLower.includes('uk') || voiceLower.includes('british') || voice.lang.includes('en-GB'));
+            }
+            // 对于Microsoft语音
+            if (nameLower.includes('microsoft')) {
+                return voiceLower.includes('microsoft') && 
+                       (voiceLower.includes('uk') || voiceLower.includes('gb') || voice.lang.includes('en-GB'));
+            }
+            return voice.name.includes(name);
+        });
+        if (isAllowedGB) {
+            categories['英式英语'].push({voice, index});
+            return;
+        }
+        
+        // 检查是否是允许的其他发音
+        const isAllowedOther = allowedOtherVoices.some(name => voice.name.includes(name));
+        if (isAllowedOther) {
+            categories['其他发音'].push({voice, index});
+        }
+    });
+    
+    // 按指定顺序排序
+    const sortByOrder = (items, orderList) => {
+        return items.sort((a, b) => {
+            const aIndex = orderList.findIndex(name => a.voice.name.includes(name));
+            const bIndex = orderList.findIndex(name => b.voice.name.includes(name));
+            return aIndex - bIndex;
+        });
+    };
+    
+    categories['美式英语'] = sortByOrder(categories['美式英语'], allowedUSVoices);
+    categories['英式英语'] = sortByOrder(categories['英式英语'], allowedGBVoices);
+    
+    // 调试：打印分类结果
+    console.log('📊 语音分类结果:');
+    Object.keys(categories).forEach(cat => {
+        console.log(`  ${cat}: ${categories[cat].length} 个`);
+        categories[cat].forEach(({voice}) => {
+            console.log(`    - ${voice.name}`);
+        });
+    });
+    
+    // 添加选项
+    Object.keys(categories).forEach(category => {
+        if (categories[category].length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            
+            categories[category].forEach(({voice, index}) => {
+                const option = document.createElement('option');
+                option.value = index;
+                
+                // 为Google语音添加VPN标注
+                const vpnTag = voice.name.includes('Google') ? ' 🌐需VPN' : '';
+                option.textContent = `${voice.name} (${voice.lang})${vpnTag}`;
+                
+                if (selectedVoice && selectedVoice.name === voice.name) {
+                    option.selected = true;
+                }
+                optgroup.appendChild(option);
+            });
+            
+            voiceSelect.appendChild(optgroup);
+        }
+    });
+}
+
+// 更改语音
+function changeVoice() {
+    const voiceSelect = document.getElementById('voiceSelect');
+    const selectedIndex = voiceSelect.value;
+    if (selectedIndex !== '') {
+        selectedVoice = allVoices[selectedIndex];
+        console.log('选择语音:', selectedVoice.name, selectedVoice.lang);
+        // 保存到localStorage
+        localStorage.setItem('selectedVoiceIndex', selectedIndex);
+    }
+}
+
+// 测试语音
+function testVoice() {
+    if (!selectedVoice) {
+        alert('请先选择一个语音');
+        return;
+    }
+    // 停止当前正在播放的语音
+    speechSynthesis.cancel();
+    
+    // 等待一小段时间确保停止完成
+    setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance('Hello, this is a test. I am your English learning assistant.');
+        utterance.voice = selectedVoice;
+        utterance.rate = voiceRate;
+        utterance.pitch = voicePitch;
+        speechSynthesis.speak(utterance);
+    }, 100);
+}
+
+// 切换语音面板显示/隐藏
+function toggleVoicePanel() {
+    const content = document.getElementById('voiceSelectorContent');
+    if (content) {
+        content.classList.toggle('active');
+    }
+}
+
+// 关闭语音面板（只关闭面板，不隐藏语音球）
+function closeVoicePanel() {
+    const content = document.getElementById('voiceSelectorContent');
+    if (content) {
+        content.classList.remove('active');
+    }
+}
+
+// 选择最佳语音（优先女声、美式英语）
+function selectBestVoice(voices) {
+    const priorities = [
+        v => v.name.includes('Google') && v.name.includes('US') && v.name.includes('Female'),
+        v => v.name.includes('Samantha'),
+        v => v.name.includes('Zira'),
+        v => v.name.includes('Female') && v.lang.startsWith('en'),
+        v => v.name.includes('female') && v.lang.startsWith('en'),
+        v => v.lang === 'en-US',
+        v => v.lang.startsWith('en-US'),
+        v => v.lang.startsWith('en')
+    ];
+    
+    for (const priority of priorities) {
+        const voice = voices.find(priority);
+        if (voice) {
+            selectedVoice = voice;
+            console.log('选择语音:', voice.name, voice.lang);
+            return;
+        }
+    }
+    
+    selectedVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+    console.log('使用默认语音:', selectedVoice?.name);
+}
+
+// 朗读文本
+function speak(text, options = {}) {
+    speechSynthesis.cancel();
+    if (!text) return;
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (selectedVoice) utterance.voice = selectedVoice;
+    
+    utterance.rate = options.rate || voiceRate;
+    utterance.pitch = options.pitch || voicePitch;
+    utterance.volume = options.volume || 1.0;
+    utterance.lang = options.lang || 'en-US';
+    
+    utterance.onerror = (e) => console.error('语音错误:', e);
+    speechSynthesis.speak(utterance);
+}
+
+// 朗读句子
+function speakSentence() {
+    const sentence = document.getElementById('referenceSentenceEn')?.textContent;
+    if (sentence) speak(sentence, { rate: 0.9 });
+}
+
+// 朗读单词
+function speakWord(word) {
+    if (word) speak(word, { rate: 0.8 });
+}
+
+// 初始化
+initVoices();
+</script>
+
+<!-- 设备管理弹窗 -->
+<div id="deviceManagerModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div style="background-color: white; margin: 10% auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">📱 设备管理</h2>
+            <span onclick="closeDeviceManager()" style="font-size: 28px; cursor: pointer; color: #aaa;">&times;</span>
+        </div>
+        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">您最多可以在2台设备上登录使用</p>
+        <div id="deviceList" style="margin-top: 20px;">
+            <div style="text-align: center; padding: 20px; color: #666;">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 设备指纹生成
+async function getDeviceFingerprint() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillText('fp', 2, 2);
+    
+    const fp = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + 'x' + screen.height,
+        new Date().getTimezoneOffset(),
+        canvas.toDataURL()
+    ].join('|');
+    
+    let hash = 0;
+    for (let i = 0; i < fp.length; i++) {
+        hash = ((hash << 5) - hash) + fp.charCodeAt(i);
+        hash = hash & hash;
+    }
+    return 'fp_' + Math.abs(hash).toString(36);
+}
+
+// 显示设备管理器
+async function showDeviceManager() {
+    document.getElementById('deviceManagerModal').style.display = 'block';
+    await loadDevices();
+}
+
+// 关闭设备管理器
+function closeDeviceManager() {
+    document.getElementById('deviceManagerModal').style.display = 'none';
+}
+
+// 加载设备列表
+async function loadDevices() {
+    const deviceList = document.getElementById('deviceList');
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+        deviceList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">请先登录</div>';
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3001/api/auth/devices', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('获取设备列表失败');
+
+        const data = await response.json();
+        console.log('📱 设备管理 - API返回数据:', data);
+        
+        const devices = data.devices || [];
+        console.log('📱 设备管理 - 设备列表:', devices);
+        console.log('📱 设备管理 - 设备数量:', devices.length);
+
+        if (devices.length === 0) {
+            deviceList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无设备记录</div>';
+            return;
+        }
+
+        const currentFp = await getDeviceFingerprint();
+
+        deviceList.innerHTML = devices.map(device => {
+            const isCurrent = device.device_fingerprint === currentFp;
+            const lastUsed = new Date(device.last_used_at).toLocaleString('zh-CN');
+            const deviceName = device.device_name || '未知设备';
+            
+            return `
+                <div style="background: ${isCurrent ? '#e8f5e9' : '#f9f9f9'}; border: 1px solid ${isCurrent ? '#4CAF50' : '#ddd'}; border-radius: 8px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; color: #333; margin-bottom: 5px;">
+                            📱 ${deviceName.substring(0, 30)}...
+                            ${isCurrent ? '<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">当前设备</span>' : ''}
+                        </div>
+                        <div style="font-size: 12px; color: #666;">最后使用: ${lastUsed}</div>
+                    </div>
+                    ${!isCurrent ? `<button onclick="removeDevice(${device.id})" style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">解绑</button>` : ''}
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('加载设备列表错误:', error);
+        deviceList.innerHTML = '<div style="text-align: center; color: #f44336; padding: 20px;">加载失败，请稍后重试</div>';
+    }
+}
+
+// 删除设备
+async function removeDevice(deviceId) {
+    if (!confirm('确定要解绑此设备吗？解绑后该设备将无法继续使用，需要重新登录。')) {
+        return;
+    }
+
+    const token = localStorage.getItem('authToken');
+
+    try {
+        const response = await fetch(`http://localhost:3001/api/auth/devices/${deviceId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('删除设备失败');
+
+        alert('设备已解绑成功！');
+        await loadDevices();
+
+    } catch (error) {
+        console.error('删除设备错误:', error);
+        alert('删除设备失败: ' + error.message);
+    }
+}
+
+// 点击弹窗外部关闭
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('deviceManagerModal');
+    if (event.target === modal) {
+        closeDeviceManager();
+    }
+});
+</script>
+<script>
+// 最简单的菜单控制 - 只用点击
+(function initLogoutMenu() {
+    const btn = document.getElementById('logoutButton');
+    if (!btn) {
+        // 如果按钮还不存在，等待DOM加载完成后再试
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLogoutMenu);
+        }
+        return;
+    }
+    
+    // 防止重复初始化
+    if (btn.dataset.menuInitialized === 'true') {
+        return;
+    }
+    btn.dataset.menuInitialized = 'true';
+    
+    const icon = btn.querySelector('.logout-btn-icon');
+    const menu = btn.querySelector('.logout-btn-content');
+    if (!icon || !menu) return;
+    
+    let isOpen = false;
+    
+    // 点击图标切换
+    icon.onclick = function(e) {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        menu.style.display = isOpen ? 'block' : 'none';
+    };
+    
+    // 点击外部关闭
+    document.onclick = function(e) {
+        if (!btn.contains(e.target)) {
+            isOpen = false;
+            menu.style.display = 'none';
+        }
+    };
+    
+    // 点击菜单内部不关闭（除了登出）
+    menu.onclick = function(e) {
+        if (e.target.textContent.includes('登出')) {
+            isOpen = false;
+            menu.style.display = 'none';
+        }
+        e.stopPropagation();
+    };
+})();
+</script>
+<script>
+// 处理支付回调
+(async function handlePaymentCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentSuccess = urlParams.get('payment');
+    const planType = urlParams.get('plan');
+    
+    if (paymentSuccess === 'success' && planType) {
+        console.log('💰 检测到支付成功返回:', { planType });
+        
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('未找到token');
+            return;
+        }
+        
+        try {
+            // 解析token获取userId
+            const tokenParts = token.split('.');
+            const payload = JSON.parse(atob(tokenParts[1]));
+            const userId = payload.id;
+            
+            // 调用支付回调API
+            const callbackResponse = await fetch(`${API_BASE_URL}/auth/payment-callback`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId,
+                    planType,
+                    paymentId: 'manual_' + Date.now()
+                })
+            });
+            
+            const callbackData = await callbackResponse.json();
+            
+            if (callbackResponse.ok) {
+                alert(`🎉 ${callbackData.message}\n\n已增加 ${callbackData.subscription.daysAdded} 天会员时长！\n\n剩余时间：${callbackData.subscription.remainingDays} 天`);
+                
+                // 清除URL参数
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // 刷新页面以更新会员状态
+                window.location.reload();
+            } else {
+                alert('⚠️ ' + (callbackData.error || '处理支付失败'));
+                console.error('支付回调失败:', callbackData);
+            }
+        } catch (error) {
+            console.error('处理支付回调错误:', error);
+            alert('⚠️ 处理支付时发生错误，请联系客服');
+        }
+    }
+})();
+</script>
+</html>

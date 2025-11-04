@@ -1,0 +1,15 @@
+# 使用Windows Server Core with Node.js
+FROM electronuserland/builder:wine
+
+WORKDIR /project
+
+# 复制backend目录
+COPY backend/package*.json ./backend/
+COPY backend/ ./backend/
+
+# 安装依赖并为Windows编译
+WORKDIR /project/backend
+RUN npm install
+
+# better-sqlite3应该已经为Windows编译了
+CMD ["sh", "-c", "cp -r node_modules/better-sqlite3/build /output/"]

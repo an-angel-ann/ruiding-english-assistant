@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - 睿叮AI英语学习助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .auth-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { font-size: 1.6em; color: #667eea; margin-bottom: 10px; }
+        .logo p { color: #666; font-size: 0.95em; }
+        .tabs { display: flex; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; }
+        .tab {
+            flex: 1; padding: 15px; text-align: center; cursor: pointer;
+            color: #999; font-weight: 600; transition: all 0.3s;
+            border-bottom: 3px solid transparent; margin-bottom: -2px;
+        }
+        .tab.active { color: #667eea; border-bottom-color: #667eea; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        .form-group input {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .verification-group {
+            display: flex; gap: 10px;
+        }
+        .verification-group input { flex: 1; }
+        .btn-code {
+            padding: 12px 20px; background: #667eea; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+            white-space: nowrap; font-weight: 600; transition: all 0.3s;
+        }
+        .btn-code:hover { background: #5568d3; }
+        .btn-code:disabled {
+            background: #ccc; cursor: not-allowed;
+        }
+        .btn-submit {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .error-message, .success-message {
+            padding: 12px; border-radius: 8px; margin-bottom: 15px;
+            display: none; animation: shake 0.5s;
+        }
+        .error-message {
+            background: #fee; color: #c33; border-left: 4px solid #e74c3c;
+        }
+        .success-message {
+            background: #efe; color: #3c3; border-left: 4px solid #2ecc71;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .form-content { display: none; }
+        .form-content.active { display: block; }
+        .info-box {
+            background: #f5f7ff; padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; color: #667eea; font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .info-box strong {
+            display: block; margin-bottom: 5px; color: #667eea;
+            font-size: 1.1em; font-weight: 600;
+        }
+        .pricing-info {
+            background: linear-gradient(135deg, #f5f7ff 0%, #e8ebff 100%);
+            padding: 20px; border-radius: 12px; margin-bottom: 20px;
+        }
+        .pricing-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        .pricing-item:last-child { border-bottom: none; }
+        .pricing-label { font-weight: 500; color: #333; }
+        .pricing-value {
+            font-weight: 700; color: #667eea; font-size: 1.1em;
+        }
+        .pricing-value.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <h1>🎓 睿叮AI英语学习助手</h1>
+            <p>学会了 就叮一下</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">登录</div>
+            <div class="tab" onclick="switchTab('register')">注册</div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- 登录表单 -->
+        <div id="loginForm" class="form-content active">
+            <div class="info-box">
+                <strong>✨ 账号登录</strong>
+                欢迎回来！请输入您的登录信息
+            </div>
+
+            <div class="form-group">
+                <label for="loginEmail">邮箱</label>
+                <input type="email" id="loginEmail" placeholder="请输入您的邮箱">
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码（至少6位）">
+            </div>
+
+            <button class="btn-submit" onclick="handleLogin()">立即登录</button>
+        </div>
+
+        <!-- 注册表单 -->
+        <div id="registerForm" class="form-content">
+            <div class="pricing-info">
+                <div class="pricing-item">
+                    <span class="pricing-label">🎁 免费试用</span>
+                    <span class="pricing-value highlight">3天</span>
+                </div>
+                <div class="pricing-item">
+                    <span class="pricing-label">⚡ 7天体验</span>
+                    <span class="pricing-value">仅需1元</span>
+                </div>
+                <div class="pricing-item">
+                    <span class="pricing-label">📅 月度订阅</span>
+                    <span class="pricing-value">29元/月</span>
+                </div>
+                <div class="pricing-item">
+                    <span class="pricing-label">🎖️ 年度会员</span>
+                    <span class="pricing-value">299元/年</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="registerUsername">用户名（可选）</label>
+                <input type="text" id="registerUsername" placeholder="请输入用户名">
+            </div>
+
+            <div class="form-group">
+                <label for="registerEmail">邮箱 *</label>
+                <input type="email" id="registerEmail" placeholder="请输入您的邮箱">
+            </div>
+
+            <div class="form-group">
+                <label for="registerCode">邮箱验证码 *</label>
+                <div class="verification-group">
+                    <input type="text" id="registerCode" placeholder="请输入验证码" maxlength="6">
+                    <button class="btn-code" id="sendCodeBtn" onclick="sendVerificationCode()">
+                        获取验证码
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="registerPassword">密码 *</label>
+                <input type="password" id="registerPassword" placeholder="请设置密码（至少6位）">
+            </div>
+
+            <button class="btn-submit" onclick="handleRegister()">注册并开始3天免费体验</button>
+        </div>
+    </div>
+
+    <script src="device-fingerprint.js"></script>
+    <script>
+        const API_BASE_URL = '/api';
+        let countdown = 0;
+        let countdownTimer = null;
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
+            document.getElementById(tab === 'login' ? 'loginForm' : 'registerForm').classList.add('active');
+            hideMessages();
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        async function sendVerificationCode() {
+            const email = document.getElementById('registerEmail').value.trim();
+            if (!validateEmail(email)) {
+                showError('请先输入正确的邮箱地址');
+                return;
+            }
+
+            const btn = document.getElementById('sendCodeBtn');
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/send-verification-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '发送失败');
+
+                showSuccess('✅ 验证码已发送到您的邮箱，请查收');
+                
+                countdown = 60;
+                countdownTimer = setInterval(() => {
+                    countdown--;
+                    btn.textContent = `${countdown}秒后重试`;
+                    if (countdown <= 0) {
+                        clearInterval(countdownTimer);
+                        btn.disabled = false;
+                        btn.textContent = '获取验证码';
+                    }
+                }, 1000);
+
+            } catch (error) {
+                showError(error.message);
+                btn.disabled = false;
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!validateEmail(email)) {
+                showError('请输入正确的邮箱地址');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('密码至少需要6位');
+                return;
+            }
+
+            try {
+                const deviceFp = await window.deviceFingerprint.generate();
+                
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, deviceFingerprint: deviceFp })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '登录失败');
+
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('userInfo', JSON.stringify(data.user));
+                window.location.href = 'index.html';
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('registerEmail').value.trim();
+            const code = document.getElementById('registerCode').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const username = document.getElementById('registerUsername').value.trim();
+
+            if (!validateEmail(email)) {
+                showError('请输入正确的邮箱地址');
+                return;
+            }
+
+            if (!code || code.length !== 6) {
+                showError('请输入6位验证码');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('密码至少需要6位');
+                return;
+            }
+
+            try {
+                const deviceFp = await window.deviceFingerprint.generate();
+                
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        username: username || email.split('@')[0],
+                        verificationCode: code,
+                        deviceFingerprint: deviceFp
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '注册失败');
+
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('userInfo', JSON.stringify(data.user));
+                
+                alert(`🎉 ${data.message}`);
+                window.location.href = 'index.html';
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const activeForm = document.querySelector('.form-content.active');
+                if (activeForm.id === 'loginForm') {
+                    handleLogin();
+                } else {
+                    handleRegister();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+const express = require('express');
+const router = express.Router();
+const { AlipaySdk, AlipayFormData } = require('alipay-sdk');
+
+const USE_SQLITE = process.env.USE_SQLITE === 'true';
+const Payment = USE_SQLITE ? require('../models/Payment-sqlite') : require('../models/Payment');
+const Subscription = USE_SQLITE ? require('../models/Subscription-sqlite') : require('../models/Subscription');
+const { authenticateToken } = require('../middleware/auth');
+
+let alipaySdk = null;
+
+try {
+    console.log('🔍 检查支付宝配置...');
+    console.log('ALIPAY_APP_ID:', process.env.ALIPAY_APP_ID ? '已设置' : '未设置');
+    console.log('ALIPAY_PRIVATE_KEY:', process.env.ALIPAY_PRIVATE_KEY ? '已设置(长度:' + process.env.ALIPAY_PRIVATE_KEY.length + ')' : '未设置');
+    console.log('ALIPAY_PUBLIC_KEY:', process.env.ALIPAY_PUBLIC_KEY ? '已设置' : '未设置');
+    
+    if (process.env.ALIPAY_APP_ID && process.env.ALIPAY_PRIVATE_KEY) {
+        alipaySdk = new AlipaySdk({
+            appId: process.env.ALIPAY_APP_ID,
+            privateKey: process.env.ALIPAY_PRIVATE_KEY,
+            alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY,
+            gateway: process.env.ALIPAY_GATEWAY || 'https://openapi.alipay.com/gateway.do',
+            signType: 'RSA2'
+        });
+        console.log('✅ 支付宝SDK初始化成功');
+    } else {
+        console.warn('⚠️  支付宝配置未完整设置');
+    }
+} catch (error) {
+    console.error('❌ 支付宝SDK初始化失败:', error.message);
+    console.error('错误详情:', error);
+}
+
+router.post('/create', authenticateToken, async (req, res) => {
+    try {
+        const { planType } = req.body;
+        const userId = req.user.id;
+        if (!alipaySdk) {
+            return res.status(503).json({ success: false, error: '支付功能暂未配置' });
+        }
+        if (!['monthly', 'yearly'].includes(planType)) {
+            return res.status(400).json({ error: '无效的套餐类型' });
+        }
+        const price = planType === 'monthly' ? 29 : 299;
+        const tradeNo = 'RD' + Date.now() + Math.floor(Math.random() * 1000);
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + (planType === 'monthly' ? 30 : 365));
+        const subscriptionId = await Subscription.create(userId, planType, startDate, endDate);
+        await Payment.create(userId, planType, subscriptionId, price, tradeNo);
+        const paymentResult = await alipaySdk.pageExec('alipay.trade.page.pay', {
+notify_url: process.env.ALIPAY_NOTIFY_URL,
+return_url: process.env.ALIPAY_RETURN_URL,
+    bizContent: {
+        outTradeNo: tradeNo,
+        productCode: 'FAST_INSTANT_TRADE_PAY',
+        totalAmount: price.toFixed(2),
+        subject: '睿叮AI - ' + (planType === 'monthly' ? '月度' : '年度') + '订阅',
+        body: '订阅: ' + (planType === 'monthly' ? '月度' : '年度'),
+        timeoutExpress: '30m'
+    }
+});
+        res.json({ success: true, orderId: tradeNo, paymentForm: paymentResult, planType: planType, amount: price });
+    } catch (error) {
+        console.error('创建支付订单失败:', error);
+        res.status(500).json({ success: false, error: '创建支付订单失败', details: error.message });
+    }
+});
+
+router.post('/notify', async (req, res) => {
+    try {
+        if (!alipaySdk) return res.send('fail');
+        const data = req.body;
+        if (!alipaySdk.checkNotifySign(data)) return res.send('fail');
+        if (data.trade_status === 'TRADE_SUCCESS' || data.trade_status === 'TRADE_FINISHED') {
+            await Payment.updateStatus(data.out_trade_no, 'completed', data.trade_no);
+            const payment = await Payment.findByTradeNo(data.out_trade_no);
+            if (payment && payment.subscription_id) {
+                await Subscription.updateStatus(payment.subscription_id, 'active');
+            }
+        }
+        res.send('success');
+    } catch (error) {
+        res.send('fail');
+    }
+});
+
+router.get('/return', async (req, res) => {
+    try {
+        const data = req.query;
+        if (alipaySdk && alipaySdk.checkNotifySign(data) && data.out_trade_no) {
+            return res.redirect('http://114.55.13.169/subscription.html?status=success&orderId=' + data.out_trade_no);
+        }
+        res.redirect('http://114.55.13.169/subscription.html?status=fail');
+    } catch (error) {
+        res.redirect('http://114.55.13.169/subscription.html?status=error');
+    }
+});
+
+router.get('/status/:orderId', authenticateToken, async (req, res) => {
+    try {
+        const payment = await Payment.findByTradeNo(req.params.orderId);
+        if (!payment) return res.status(404).json({ error: '订单不存在' });
+        res.json({ orderId: payment.trade_no, status: payment.status, amount: payment.amount, createdAt: payment.created_at });
+    } catch (error) {
+        res.status(500).json({ error: '查询失败' });
+    }
+});
+
+router.get('/history', authenticateToken, async (req, res) => {
+    try {
+        const history = await Payment.findByUserId(req.user.id);
+        res.json({ success: true, history: history.map(p => ({ orderId: p.trade_no, amount: p.amount, status: p.status, paymentMethod: p.payment_method, planType: p.plan_type, createdAt: p.created_at })) });
+    } catch (error) {
+        res.status(500).json({ error: '获取历史失败' });
+    }
+});
+
+module.exports = router;

@@ -1,0 +1,235 @@
+const express = require('express');
+const router = express.Router();
+const { requireAdmin } = require('../middleware/admin');
+const { pool } = require('../config/database');
+
+// 获取所有用户列表（带统计信息）
+    try {
+        const [users] = await pool.query(`
+            SELECT 
+                u.id,
+                u.email,
+                u.username,
+                u.created_at,
+                u.last_login,
+                u.status,
+                u.role,
+                s.plan_type,
+                s.end_date,
+                DATEDIFF(s.end_date, NOW()) as days_remaining,
+                COUNT(DISTINCT po.id) as purchase_count,
+                COALESCE(SUM(CASE WHEN po.status = 'paid' THEN po.amount ELSE 0 END), 0) as total_paid,
+                n.note
+            FROM users u
+            LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'
+            LEFT JOIN payment_orders po ON u.id = po.user_id
+            LEFT JOIN user_notes n ON u.id = n.user_id
+            GROUP BY u.id, u.email, u.username, u.created_at, u.last_login, u.status, u.role, s.plan_type, s.end_date, n.note
+            ORDER BY u.created_at DESC
+        `);
+
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('获取用户列表错误:', error);
+        res.status(500).json({ error: '获取用户列表失败' });
+    }
+});
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('获取用户列表错误:', error);
+        res.status(500).json({ error: '获取用户列表失败' });
+    }
+});
+
+// 获取单个用户详情
+    try {
+        const [users] = await pool.query(`
+            SELECT 
+                u.id,
+                u.email,
+                u.username,
+                u.created_at,
+                u.last_login,
+                u.status,
+                u.role,
+                s.plan_type,
+                s.end_date,
+                DATEDIFF(s.end_date, NOW()) as days_remaining,
+                COUNT(DISTINCT po.id) as purchase_count,
+                COALESCE(SUM(CASE WHEN po.status = 'paid' THEN po.amount ELSE 0 END), 0) as total_paid,
+                n.note
+            FROM users u
+            LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'
+            LEFT JOIN payment_orders po ON u.id = po.user_id
+            LEFT JOIN user_notes n ON u.id = n.user_id
+            GROUP BY u.id, u.email, u.username, u.created_at, u.last_login, u.status, u.role, s.plan_type, s.end_date, n.note
+            ORDER BY u.created_at DESC
+        `);
+
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('获取用户列表错误:', error);
+        res.status(500).json({ error: '获取用户列表失败' });
+    }
+});
+            return res.status(404).json({ error: '用户不存在' });
+        }
+
+        // 订阅信息
+        const [subscriptions] = await pool.query(
+            'SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
+
+        // 购买记录
+        const [orders] = await pool.query(
+            'SELECT * FROM payment_orders WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
+
+        // 设备指纹
+        const [devices] = await pool.query(
+            'SELECT DISTINCT device_fingerprint, created_at FROM device_bindings WHERE user_id = ? ORDER BY created_at DESC LIMIT 2',
+            [userId]
+        );
+
+        // API使用统计
+        const [apiStats] = await pool.query(`
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as call_count,
+                SUM(tokens_used) as total_tokens
+            FROM api_usage_logs
+            WHERE user_id = ?
+            GROUP BY DATE(created_at)
+            ORDER BY date DESC
+            LIMIT 90
+        `, [userId]);
+
+        // 备注
+        const [notes] = await pool.query(
+            'SELECT * FROM user_notes WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1',
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            user: users[0],
+            subscriptions,
+            orders,
+            devices,
+            apiStats,
+            note: notes[0] || null
+        });
+    } catch (error) {
+        console.error('获取用户详情错误:', error);
+        res.status(500).json({ error: '获取用户详情失败' });
+    }
+});
+
+// 更新用户订阅时长
+router.put('/users/:userId/subscription', requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { days } = req.body;
+
+        if (!days || days < 0) {
+            return res.status(400).json({ error: '无效的天数' });
+        }
+
+        // 获取当前订阅
+        const [subs] = await pool.query(
+            'SELECT * FROM subscriptions WHERE user_id = ? AND status = "active" ORDER BY end_date DESC LIMIT 1',
+            [userId]
+        );
+
+        if (subs.length > 0) {
+            // 更新现有订阅
+            const newEndDate = new Date(subs[0].end_date);
+            newEndDate.setDate(newEndDate.getDate() + parseInt(days));
+
+            await pool.query(
+                'UPDATE subscriptions SET end_date = ? WHERE id = ?',
+                [newEndDate, subs[0].id]
+            );
+        } else {
+            // 创建新订阅
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + parseInt(days));
+
+            await pool.query(
+                'INSERT INTO subscriptions (user_id, plan_type, status, start_date, end_date, auto_renew) VALUES (?, ?, ?, ?, ?, FALSE)',
+                [userId, 'admin_grant', 'active', startDate, endDate]
+            );
+        }
+
+        res.json({ success: true, message: '订阅时长已更新' });
+    } catch (error) {
+        console.error('更新订阅错误:', error);
+        res.status(500).json({ error: '更新订阅失败' });
+    }
+});
+
+// 更新用户备注
+router.put('/users/:userId/note', requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { note } = req.body;
+        const adminId = req.user.id;
+
+        await pool.query(
+            `INSERT INTO user_notes (user_id, admin_id, note) 
+             VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE note = ?, admin_id = ?, updated_at = NOW()`,
+            [userId, adminId, note, note, adminId]
+        );
+
+        res.json({ success: true, message: '备注已保存' });
+    } catch (error) {
+        console.error('保存备注错误:', error);
+        res.status(500).json({ error: '保存备注失败' });
+    }
+});
+
+// 删除用户
+router.delete('/users/:userId', requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // 防止删除管理员自己
+        if (parseInt(userId) === req.user.id) {
+            return res.status(400).json({ error: '不能删除自己的账号' });
+        }
+
+        await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+
+        res.json({ success: true, message: '用户已删除' });
+    } catch (error) {
+        console.error('删除用户错误:', error);
+        res.status(500).json({ error: '删除用户失败' });
+    }
+});
+
+// 获取统计数据
+router.get('/stats', requireAdmin, async (req, res) => {
+    try {
+        const [stats] = await pool.query(`
+            SELECT 
+                COUNT(DISTINCT u.id) as total_users,
+                COUNT(DISTINCT CASE WHEN s.status = 'active' THEN u.id END) as active_users,
+                COUNT(DISTINCT po.id) as total_orders,
+                COALESCE(SUM(CASE WHEN po.status = 'paid' THEN po.amount ELSE 0 END), 0) as total_revenue
+            FROM users u
+            LEFT JOIN subscriptions s ON u.id = s.user_id
+            LEFT JOIN payment_orders po ON u.id = po.user_id
+        `);
+
+        res.json({ success: true, stats: stats[0] });
+    } catch (error) {
+        console.error('获取统计数据错误:', error);
+        res.status(500).json({ error: '获取统计数据失败' });
+    }
+});
+
+module.exports = router;

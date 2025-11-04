@@ -1,0 +1,168 @@
+const express = require('express');
+const router = express.Router();
+const crypto = require('crypto');
+
+const USE_SQLITE = process.env.USE_SQLITE === 'true';
+const Payment = USE_SQLITE ? require('../models/Payment-sqlite') : require('../models/Payment');
+const Subscription = USE_SQLITE ? require('../models/Subscription-sqlite') : require('../models/Subscription');
+const { authenticateToken } = require('../middleware/auth');
+
+// 虎皮椒配置检查
+console.log('🔍 检查虎皮椒配置...');
+console.log('XUNHU_APPID:', process.env.XUNHU_APPID ? '已设置' : '未设置');
+console.log('XUNHU_APPSECRET:', process.env.XUNHU_APPSECRET ? '已设置' : '未设置');
+
+// 生成虎皮椒签名
+function generateSign(params, secret) {
+    const sortedKeys = Object.keys(params).sort();
+    const signStr = sortedKeys.map(key => `${key}=${params[key]}`).join('&') + secret;
+    return crypto.createHash('md5').update(signStr).digest('hex');
+}
+
+// 创建支付订单
+router.post('/create', authenticateToken, async (req, res) => {
+    try {
+        const { planType } = req.body;
+        const userId = req.user.id;
+
+        if (!process.env.XUNHU_APPID || !process.env.XUNHU_APPSECRET) {
+            return res.status(503).json({ success: false, error: '支付功能暂未配置' });
+        }
+
+        if (!['monthly', 'yearly'].includes(planType)) {
+            return res.status(400).json({ error: '无效的套餐类型' });
+        }
+
+        const price = planType === 'monthly' ? 29 : 299;
+        const tradeNo = 'RD' + Date.now() + Math.floor(Math.random() * 1000);
+
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + (planType === 'monthly' ? 30 : 365));
+
+        // 不预先创建订阅，而是创建支付记录，等待回调成功后再处理订阅
+        await Payment.create(userId, planType, null, price, tradeNo);
+
+        // 构建虎皮椒支付参数
+        const payParams = {
+            version: '1.1',
+            appid: process.env.XUNHU_APPID,
+            trade_order_id: tradeNo,
+            total_fee: price.toFixed(2),
+            title: '睿叮AI - ' + (planType === 'monthly' ? '月度' : '年度') + '订阅',
+            time: Math.floor(Date.now() / 1000).toString(),
+            notify_url: process.env.XUNHU_NOTIFY_URL,
+            return_url: process.env.XUNHU_RETURN_URL,
+            nonce_str: Math.random().toString(36).substr(2, 15),
+            type: 'wechat', // 微信支付
+            wap_name: '睿叮AI'
+        };
+
+        // 生成签名
+        payParams.hash = generateSign(payParams, process.env.XUNHU_APPSECRET);
+
+// 构建支付URL
+const payUrl = process.env.XUNHU_GATEWAY + '?' + 
+    Object.keys(payParams).map(k => `${k}=${encodeURIComponent(payParams[k])}`).join('&');
+
+console.log('✅ 创建支付订单:', tradeNo);
+
+// 请求支付网关获取支付页面URL
+try {
+    const response = await fetch(payUrl);
+    const result = await response.json();
+    
+    if (result.errcode === 0 && result.url) {
+        // 返回支付页面URL
+        res.json({ 
+            success: true, 
+            orderId: tradeNo, 
+            paymentUrl: result.url,
+            planType: planType, 
+            amount: price 
+        });
+    } else {
+        throw new Error('支付网关返回错误: ' + result.errmsg);
+    }
+} catch (fetchError) {
+    console.error('请求支付网关失败:', fetchError);
+    res.status(500).json({ success: false, error: '创建支付失败', details: fetchError.message });
+}
+
+    } catch (error) {
+        console.error('创建支付订单失败:', error);
+        res.status(500).json({ success: false, error: '创建支付订单失败', details: error.message });
+    }
+});
+
+// 支付回调通知
+router.post('/notify', async (req, res) => {
+    try {
+        console.log('📥 收到虎皮椒回调:', req.body);
+        
+        const data = { ...req.body };
+        const hash = data.hash;
+        delete data.hash;
+
+        // 验证签名
+        const expectedHash = generateSign(data, process.env.XUNHU_APPSECRET);
+        if (hash !== expectedHash) {
+            console.error('❌ 签名验证失败');
+            return res.send('fail');
+        }
+
+
+// 同步返回
+router.get('/return', async (req, res) => {
+    try {
+        const data = { ...req.query };
+        const hash = data.hash;
+        delete data.hash;
+
+        const expectedHash = generateSign(data, process.env.XUNHU_APPSECRET);
+        if (hash === expectedHash && data.trade_order_id) {
+            return res.redirect(`http://ruiding.online/subscription.html?status=success&orderId=${data.trade_order_id}`);
+        }
+        res.redirect('http://ruiding.online/subscription.html?status=fail');
+    } catch (error) {
+        res.redirect('http://ruiding.online/subscription.html?status=error');
+    }
+});
+
+// 查询订单状态
+router.get('/status/:orderId', authenticateToken, async (req, res) => {
+    try {
+        const payment = await Payment.findByTradeNo(req.params.orderId);
+        if (!payment) return res.status(404).json({ error: '订单不存在' });
+        res.json({ 
+            orderId: payment.trade_no, 
+            status: payment.status, 
+            amount: payment.amount, 
+            createdAt: payment.created_at 
+        });
+    } catch (error) {
+        res.status(500).json({ error: '查询失败' });
+    }
+});
+
+// 支付历史
+router.get('/history', authenticateToken, async (req, res) => {
+    try {
+        const history = await Payment.findByUserId(req.user.id);
+        res.json({ 
+            success: true, 
+            history: history.map(p => ({ 
+                orderId: p.trade_no, 
+                amount: p.amount, 
+                status: p.status, 
+                paymentMethod: p.payment_method, 
+                planType: p.plan_type, 
+                createdAt: p.created_at 
+            })) 
+        });
+    } catch (error) {
+        res.status(500).json({ error: '获取历史失败' });
+    }
+});
+
+module.exports = router;

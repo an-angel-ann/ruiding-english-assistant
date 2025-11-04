@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>版本检查</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .success { color: green; font-size: 20px; }
+        .error { color: red; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 版本检查</h1>
+    <div id="result">检查中...</div>
+    
+    <script>
+        fetch('/index.html')
+            .then(res => res.text())
+            .then(html => {
+                if (html.includes('logoutButton')) {
+                    document.getElementById('result').innerHTML = `
+                        <p class="success">✅ 文件已更新！包含登出按钮代码</p>
+                        <p>现在请访问: <a href="/index.html">http://localhost:8888/index.html</a></p>
+                        <p>并按 <strong>Cmd+Shift+R</strong> 强制刷新</p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                        <p class="error">❌ 文件未更新！没有找到登出按钮代码</p>
+                    `;
+                }
+            });
+    </script>
+</body>
+</html>

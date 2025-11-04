@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台 - 睿叮AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 1.8em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            color: #667eea;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .users-table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tr:hover {
+            background: #f8f9ff;
+            cursor: pointer;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-active { background: #e8f5e9; color: #2e7d32; }
+        .badge-expired { background: #ffebee; color: #c62828; }
+        .badge-admin { background: #fff3e0; color: #e65100; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+        }
+
+        .close-btn {
+            font-size: 2em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .detail-section {
+            margin-bottom: 30px;
+        }
+
+        .detail-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .detail-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8f8f8;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            width: 150px;
+        }
+
+        .detail-value {
+            color: #333;
+            flex: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            height: 300px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>👑 管理员控制台</h1>
+            <button class="btn btn-logout" onclick="logout()">退出登录</button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>总用户数</h3>
+                <div class="value" id="totalUsers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>活跃用户</h3>
+                <div class="value" id="activeUsers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>总订单数</h3>
+                <div class="value" id="totalOrders">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>总收入</h3>
+                <div class="value" id="totalRevenue">¥-</div>
+            </div>
+        </div>
+
+        <!-- 用户列表 -->
+        <div class="users-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #667eea;">📊 用户管理</h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span id="autoRefreshStatus" style="color: #28a745; font-size: 14px;">🔄 自动刷新已启用（每30秒）</span>
+                    <button onclick="manualRefresh()" style="padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        🔄 立即刷新
+                    </button>
+                </div>
+            </div>
+            <div id="loading" class="loading" style="color: #667eea;">加载中...</div>
+            <table id="usersTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>邮箱</th>
+                        <th>用户名</th>
+                        <th>注册时间</th>
+                        <th>剩余天数</th>
+                        <th>购买次数</th>
+                        <th>累计付款</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 用户详情模态框 -->
+        <div class="modal" id="userDetailModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>用户详情</h2>
+                    <span class="close-btn" onclick="closeModal()">&times;</span>
+                </div>
+                <div id="userDetailContent">
+                    <!-- 动态内容 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="footer">
+            <button class="btn btn-logout" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+        let currentUsers = [];
+
+        // 页面加载时初始化
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('authToken');
+            
+            if (!token) {
+                alert('请先登录管理员账号');
+                window.location.href = '/auth.html';
+                return;
+            }
+
+            // 验证token有效性并检查管理员权限
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Token无效');
+                }
+
+                const userData = await response.json();
+                
+                // 检查是否是管理员
+                if (userData.user.role !== 'admin') {
+                    alert('权限不足，需要管理员权限');
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/auth.html';
+                    return;
+                }
+
+                // 加载数据
+                await loadStats();
+                await loadUsers();
+
+                // 启动自动刷新（每30秒刷新一次）
+                console.log('🔄 启动自动刷新，每30秒更新一次数据');
+                setInterval(async () => {
+                    console.log('🔄 自动刷新数据...');
+                    try {
+                        await loadStats();
+                        await loadUsers();
+                        console.log('✅ 数据刷新完成');
+                    } catch (error) {
+                        console.error('❌ 自动刷新失败:', error);
+                    }
+                }, 30000); // 30秒
+
+            } catch (error) {
+                console.error('认证失败:', error);
+                alert('登录已过期，请重新登录');
+                localStorage.removeItem('authToken');
+                window.location.href = '/auth.html';
+            }
+        });
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        alert('权限不足，需要管理员权限');
+                        window.location.href = '/index.html';
+                        return;
+                    }
+                    throw new Error('获取统计数据失败');
+                }
+
+                const data = await response.json();
+                const stats = data.stats;
+
+                document.getElementById('totalUsers').textContent = stats.total_users || 0;
+                document.getElementById('activeUsers').textContent = stats.active_users || 0;
+                document.getElementById('totalOrders').textContent = stats.total_orders || 0;
+                document.getElementById('totalRevenue').textContent = '¥' + (stats.total_revenue || 0);
+
+            } catch (error) {
+                console.error('加载统计数据错误:', error);
+            }
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取用户列表失败');
+
+                const data = await response.json();
+                currentUsers = data.users;
+
+                renderUsersTable(currentUsers);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('usersTable').style.display = 'table';
+
+            } catch (error) {
+                console.error('加载用户列表错误:', error);
+                document.getElementById('loading').textContent = '加载失败: ' + error.message;
+            }
+        }
+
+        // 渲染用户表格
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => showUserDetail(user.id);
+
+                const registerTime = new Date(user.created_at).toLocaleString('zh-CN');
+                const daysRemaining = user.days_remaining || 0;
+                const statusBadge = user.role === 'admin' 
+                    ? '<span class="badge badge-admin">管理员</span>'
+                    : daysRemaining > 0 
+                        ? '<span class="badge badge-active">活跃</span>'
+                        : '<span class="badge badge-expired">已过期</span>';
+
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.email}</td>
+                    <td>${user.username || '-'}</td>
+                    <td>${registerTime}</td>
+                    <td>${daysRemaining}天</td>
+                    <td>${user.purchase_count || 0}</td>
+                    <td>¥${user.total_paid || 0}</td>
+                    <td>${statusBadge}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 显示用户详情
+        async function showUserDetail(userId) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取用户详情失败');
+
+                const data = await response.json();
+                renderUserDetail(data);
+
+                document.getElementById('userDetailModal').classList.add('active');
+
+            } catch (error) {
+                console.error('获取用户详情错误:', error);
+                alert('获取用户详情失败: ' + error.message);
+            }
+        }
+
+        // 渲染用户详情
+        function renderUserDetail(data) {
+            const user = data.user;
+            const content = document.getElementById('userDetailContent');
+
+            // 基本信息
+            let html = `
+                <div class="detail-section">
+                    <h3>📋 基本信息</h3>
+                    <div class="detail-row">
+                        <div class="detail-label">用户ID:</div>
+                        <div class="detail-value">${user.id}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">邮箱:</div>
+                        <div class="detail-value">${user.email}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">用户名:</div>
+                        <div class="detail-value">${user.username || '-'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">注册时间:</div>
+                        <div class="detail-value">${new Date(user.created_at).toLocaleString('zh-CN')}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">最后登录:</div>
+                        <div class="detail-value">${user.last_login ? new Date(user.last_login).toLocaleString('zh-CN') : '从未登录'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">角色:</div>
+                        <div class="detail-value">${user.role === 'admin' ? '管理员' : '普通用户'}</div>
+                    </div>
+                </div>
+            `;
+
+            // 订阅信息
+            html += `<div class="detail-section"><h3>💳 订阅记录</h3>`;
+            if (data.subscriptions.length > 0) {
+                data.subscriptions.forEach(sub => {
+                    html += `
+                        <div class="detail-row">
+                            <div class="detail-label">${sub.plan_type}</div>
+                            <div class="detail-value">
+                                ${new Date(sub.start_date).toLocaleDateString()} - ${new Date(sub.end_date).toLocaleDateString()}
+                                (${sub.status})
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += `<p>暂无订阅记录</p>`;
+            }
+            html += `</div>`;
+
+            // 购买记录
+            html += `<div class="detail-section"><h3>🛒 购买记录</h3>`;
+            if (data.orders.length > 0) {
+                let totalPaid = 0;
+                data.orders.forEach(order => {
+                    if (order.status === 'paid') totalPaid += parseFloat(order.amount);
+                    html += `
+                        <div class="detail-row">
+                            <div class="detail-label">${new Date(order.created_at).toLocaleString('zh-CN')}</div>
+                            <div class="detail-value">
+                                ${order.plan_type} - ¥${order.amount} (${order.status})
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `<div class="detail-row"><div class="detail-label"><strong>累计付款:</strong></div><div class="detail-value"><strong>¥${totalPaid}</strong></div></div>`;
+            } else {
+                html += `<p>暂无购买记录</p>`;
+            }
+            html += `</div>`;
+
+            // 设备指纹
+            html += `<div class="detail-section"><h3>📱 设备指纹</h3>`;
+            if (data.devices && data.devices.length > 0) {
+                data.devices.forEach((device, index) => {
+                    html += `
+                        <div class="detail-row">
+                            <div class="detail-label">设备${index + 1}:</div>
+                            <div class="detail-value">${device.device_fingerprint.substring(0, 20)}...</div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += `<p>暂无设备记录</p>`;
+            }
+            html += `</div>`;
+
+            // 管理操作
+            html += `
+                <div class="detail-section">
+                    <h3>⚙️ 管理操作</h3>
+                    <div class="form-group">
+                        <label>调整订阅时长（天数）:</label>
+                        <input type="number" id="adjustDays" placeholder="输入天数（正数增加，负数减少）" />
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="adjustSubscription(${user.id})">
+                            更新订阅
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>备注信息:</label>
+                        <textarea id="userNote" rows="4" placeholder="输入备注...">${data.note ? data.note.note : ''}</textarea>
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="saveNote(${user.id})">
+                            保存备注
+                        </button>
+                    </div>
+                    ${user.role !== 'admin' ? `
+                    <div class="form-group">
+                        <button class="btn btn-danger" onclick="deleteUser(${user.id})">
+                            删除用户
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        // 调整订阅
+        async function adjustSubscription(userId) {
+            console.log('🔧 调整订阅函数被调用');
+            console.log('   用户ID:', userId);
+            
+            const days = document.getElementById('adjustDays').value;
+            console.log('   输入天数:', days);
+            
+            if (!days || days == 0) {
+                console.log('   ❌ 天数无效');
+                alert('请输入有效的天数');
+                return;
+            }
+
+            if (!confirm(`确定要${days > 0 ? '增加' : '减少'} ${Math.abs(days)} 天订阅时长吗？`)) {
+                console.log('   ❌ 用户取消操作');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                console.log('   Token:', token ? '存在' : '不存在');
+                console.log('   API URL:', `${API_BASE_URL}/admin/users/${userId}/subscription`);
+                
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/subscription`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ days: parseInt(days) })
+                });
+
+                console.log('   响应状态:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.log('   错误响应:', errorData);
+                    throw new Error(errorData.error || '更新订阅失败');
+                }
+
+                console.log('   ✅ 更新成功');
+                alert('✅ 订阅时长已更新');
+                closeModal();
+                loadUsers();
+
+            } catch (error) {
+                console.error('❌ 更新订阅错误:', error);
+                alert('更新订阅失败: ' + error.message);
+            }
+        }
+
+        // 保存备注
+        async function saveNote(userId) {
+            const note = document.getElementById('userNote').value;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/note`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ note })
+                });
+
+                if (!response.ok) throw new Error('保存备注失败');
+
+                alert('✅ 备注已保存');
+
+            } catch (error) {
+                console.error('保存备注错误:', error);
+                alert('保存备注失败: ' + error.message);
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId) {
+            console.log('🗑️ 删除用户函数被调用');
+            console.log('   用户ID:', userId);
+            
+            if (!confirm('⚠️ 确定要删除此用户吗？此操作不可恢复！')) {
+                console.log('   ❌ 用户取消删除');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                console.log('   Token:', token ? '存在' : '不存在');
+                console.log('   API URL:', `${API_BASE_URL}/admin/users/${userId}`);
+                
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                console.log('   响应状态:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.log('   错误响应:', errorData);
+                    throw new Error(errorData.error || '删除用户失败');
+                }
+
+                console.log('   ✅ 删除成功');
+                alert('✅ 用户已删除');
+                closeModal();
+                loadUsers();
+                loadStats();
+
+            } catch (error) {
+                console.error('❌ 删除用户错误:', error);
+                alert('删除用户失败: ' + error.message);
+            }
+        }
+
+        // 手动刷新数据
+        async function manualRefresh() {
+            console.log('🔄 手动刷新数据...');
+            const statusEl = document.getElementById('autoRefreshStatus');
+            const originalText = statusEl.textContent;
+            
+            try {
+                statusEl.textContent = '🔄 正在刷新...';
+                statusEl.style.color = '#ffc107';
+                
+                await loadStats();
+                await loadUsers();
+                
+                statusEl.textContent = '✅ 刷新完成';
+                statusEl.style.color = '#28a745';
+                
+                setTimeout(() => {
+                    statusEl.textContent = originalText;
+                }, 2000);
+                
+                console.log('✅ 手动刷新完成');
+            } catch (error) {
+                console.error('❌ 手动刷新失败:', error);
+                statusEl.textContent = '❌ 刷新失败';
+                statusEl.style.color = '#dc3545';
+                
+                setTimeout(() => {
+                    statusEl.textContent = originalText;
+                    statusEl.style.color = '#28a745';
+                }, 2000);
+            }
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('userDetailModal').classList.remove('active');
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userInfo');
+                window.location.href = '/auth.html';
+            }
+        }
+    </script>
+</body>
+</html>

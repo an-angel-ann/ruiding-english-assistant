@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试 - 睿叮AI英语学习助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .test-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover { background: #5a6fd8; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔐 登录页面测试</h1>
+        <div id="status"></div>
+        
+        <button onclick="testDeviceFingerprint()">测试设备指纹</button>
+        <button onclick="testAPIConnection()">测试API连接</button>
+        <button onclick="goToMain()">返回主页</button>
+        
+        <div style="margin-top: 30px;">
+            <a href="index.html" style="color: #667eea; text-decoration: none;">← 返回主页</a>
+        </div>
+    </div>
+
+    <script src="device-fingerprint.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+        
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="status ${isError ? 'error' : 'success'}">${message}</div>`;
+        }
+        
+        async function testDeviceFingerprint() {
+            try {
+                showStatus('正在生成设备指纹...');
+                const fp = await window.deviceFingerprint.generate();
+                showStatus(`✅ 设备指纹生成成功: ${fp.substring(0, 16)}...`);
+            } catch (error) {
+                showStatus(`❌ 设备指纹错误: ${error.message}`, true);
+            }
+        }
+        
+        async function testAPIConnection() {
+            try {
+                showStatus('正在测试API连接...');
+                const response = await fetch(`${API_BASE_URL}/auth/me`);
+                if (response.ok) {
+                    showStatus('✅ API连接正常');
+                } else {
+                    showStatus(`❌ API响应错误: ${response.status}`, true);
+                }
+            } catch (error) {
+                showStatus(`❌ API连接失败: ${error.message}`, true);
+            }
+        }
+        
+        function goToMain() {
+            window.location.href = 'index.html';
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('load', () => {
+            showStatus('🚀 页面加载成功，请点击按钮进行测试');
+        });
+    </script>
+</body>
+</html>

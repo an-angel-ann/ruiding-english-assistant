@@ -1,0 +1,174 @@
+name: Build All Platforms
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: 3.2.0)'
+        required: true
+        default: '3.2.0'
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          cd backend
+          npm install
+          cd ..
+      
+      - name: Build Windows
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ github.event.inputs.version || github.ref_name }}
+          path: |
+            dist/*.exe
+          retention-days: 30
+
+  build-macos-arm:
+    name: Build macOS ARM64
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          cd backend
+          npm install
+          cd ..
+      
+      - name: Build macOS ARM64
+        run: npm run build:mac-arm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload macOS ARM64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-${{ github.event.inputs.version || github.ref_name }}
+          path: |
+            dist/*-arm64.dmg
+            dist/*-arm64-mac.zip
+          retention-days: 30
+
+  build-macos-intel:
+    name: Build macOS Intel
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          cd backend
+          npm install
+          cd ..
+      
+      - name: Build macOS Intel
+        run: npm run build:mac-intel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload macOS Intel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-intel-${{ github.event.inputs.version || github.ref_name }}
+          path: |
+            dist/睿叮AI英语学习助手-3.*.dmg
+            dist/睿叮AI英语学习助手-3.*-mac.zip
+          retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: [build-windows, build-macos-arm, build-macos-intel]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Display structure
+        run: ls -R artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## 睿叮AI英语学习助手 ${{ github.ref_name }}
+            
+            ### 📦 安装包
+            
+            **Windows (64位)**
+            - 安装程序: `睿叮AI英语学习助手-v${{ github.ref_name }}-x64.exe`
+            - 便携版: `睿叮AI英语学习助手-v${{ github.ref_name }}-portable.exe`
+            
+            **macOS (Apple Silicon)**
+            - DMG: `睿叮AI英语学习助手-${{ github.ref_name }}-arm64.dmg`
+            - ZIP: `睿叮AI英语学习助手-${{ github.ref_name }}-arm64-mac.zip`
+            
+            **macOS (Intel)**
+            - DMG: `睿叮AI英语学习助手-${{ github.ref_name }}.dmg`
+            - ZIP: `睿叮AI英语学习助手-${{ github.ref_name }}-mac.zip`
+            
+            ### 📋 系统要求
+            - Windows: Windows 10/11 (64位)
+            - macOS: macOS 10.12 或更高版本
+            
+            ### 🔐 首次运行授权
+            - Windows: 点击"更多信息" → "仍要运行"
+            - macOS: 使用终端命令授权（见安装说明）
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
