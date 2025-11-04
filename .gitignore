@@ -4,7 +4,7 @@ node_modules/
 
 # Build output
 dist/
-build/
+# build/  # 不要排除build目录，它包含图标文件
 
 # Large installer files (will be built by GitHub Actions)
 *.dmg
