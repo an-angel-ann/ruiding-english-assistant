@@ -52,22 +52,47 @@ exports.default = async function(context) {
         const archMap = { 0: 'ia32', 1: 'x64', 2: 'armv7l', 3: 'arm64', 4: 'universal' };
         const targetArch = archMap[arch] || 'x64';
         
-        const rebuildCmd = `npx electron-rebuild -v ${electronVersion} -f -w better-sqlite3 -a ${targetArch}`;
+        const rebuildCmd = `npx electron-rebuild -v ${electronVersion} -f -w better-sqlite3 -a ${targetArch} -o better-sqlite3`;
         console.log(`  执行命令: ${rebuildCmd}`);
         
-        execSync(rebuildCmd, {
-            cwd: backendPath,
-            stdio: 'inherit',
-            env: {
-                ...process.env,
-                npm_config_target: electronVersion,
-                npm_config_arch: targetArch,
-                npm_config_target_arch: targetArch,
-                npm_config_disturl: 'https://electronjs.org/headers',
-                npm_config_runtime: 'electron',
-                npm_config_build_from_source: 'true'
+        try {
+            execSync(rebuildCmd, {
+                cwd: backendPath,
+                stdio: 'inherit',
+                env: {
+                    ...process.env,
+                    npm_config_target: electronVersion,
+                    npm_config_arch: targetArch,
+                    npm_config_target_arch: targetArch,
+                    npm_config_disturl: 'https://electronjs.org/headers',
+                    npm_config_runtime: 'electron',
+                    npm_config_build_from_source: 'true'
+                }
+            });
+        } catch (rebuildError) {
+            console.log(`  ⚠️  electron-rebuild失败，尝试使用node-gyp直接编译...`);
+            
+            // 尝试直接使用node-gyp编译better-sqlite3
+            const sqlitePath = path.join(backendPath, 'node_modules', 'better-sqlite3');
+            if (fs.existsSync(sqlitePath)) {
+                try {
+                    execSync(`npm rebuild better-sqlite3 --build-from-source`, {
+                        cwd: backendPath,
+                        stdio: 'inherit',
+                        env: {
+                            ...process.env,
+                            npm_config_target: electronVersion,
+                            npm_config_arch: targetArch,
+                            npm_config_runtime: 'electron',
+                            npm_config_disturl: 'https://electronjs.org/headers'
+                        }
+                    });
+                } catch (nodeGypError) {
+                    console.log(`  ⚠️  node-gyp也失败了，使用预编译版本`);
+                    // 继续，使用npm安装的预编译版本
+                }
             }
-        });
+        }
         
         const sqliteNodePath = path.join(backendPath, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
         
