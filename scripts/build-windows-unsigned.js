@@ -18,8 +18,23 @@ env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
 try {
   console.log('🔨 开始构建Windows版本（无签名）...\n');
   
-  // 使用 --config 参数直接禁用签名
-  execSync('npx electron-builder --win --x64 --config.forceCodeSigning=false --config.win.sign=null', {
+  // 1. 确保backend依赖已安装
+  const fs = require('fs');
+  const backendPath = path.join(__dirname, '..', 'backend');
+  const backendNodeModules = path.join(backendPath, 'node_modules');
+  
+  if (!fs.existsSync(backendNodeModules)) {
+    console.log('📦 安装backend依赖...\n');
+    execSync('npm install', {
+      cwd: backendPath,
+      stdio: 'inherit'
+    });
+  } else {
+    console.log('✅ Backend依赖已存在\n');
+  }
+  
+  // 2. 使用 --config 参数直接禁用签名
+  execSync('npx electron-builder --win --x64 --config.forceCodeSigning=false', {
     cwd: path.join(__dirname, '..'),
     stdio: 'inherit',
     env: env
