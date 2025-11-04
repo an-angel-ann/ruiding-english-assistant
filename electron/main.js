@@ -86,13 +86,12 @@ function createWindow() {
 // 启动后端服务器
 function startBackendServer() {
     return new Promise((resolve, reject) => {
+        const fs = require('fs');
+        
         // 获取正确的资源路径
         let backendPath;
         if (app.isPackaged) {
             // 打包后的路径 - extraResources放在Resources目录下
-            const fs = require('fs');
-            
-            // 优先使用extraResources路径
             backendPath = path.join(process.resourcesPath, 'backend');
             
             // 如果不存在，尝试app.asar.unpacked
@@ -110,9 +109,8 @@ function startBackendServer() {
         }
 
         const serverScript = path.join(backendPath, 'server.js');
-        const fs = require('fs');
 
-        console.log('启动后端服务器...');
+        console.log('=== 后端服务器启动信息 ===');
         console.log('应用路径:', app.getAppPath());
         console.log('资源路径:', process.resourcesPath);
         console.log('后端路径:', backendPath);
@@ -124,6 +122,7 @@ function startBackendServer() {
         if (!fs.existsSync(backendPath)) {
             const error = new Error(`后端目录不存在: ${backendPath}`);
             console.error(error);
+            dialog.showErrorBox('启动失败', `后端目录不存在:\n${backendPath}\n\n请重新安装应用`);
             reject(error);
             return;
         }
@@ -131,6 +130,17 @@ function startBackendServer() {
         if (!fs.existsSync(serverScript)) {
             const error = new Error(`服务器脚本不存在: ${serverScript}`);
             console.error(error);
+            dialog.showErrorBox('启动失败', `服务器脚本不存在:\n${serverScript}\n\n请重新安装应用`);
+            reject(error);
+            return;
+        }
+        
+        // 检查node_modules是否存在
+        const nodeModulesPath = path.join(backendPath, 'node_modules');
+        if (!fs.existsSync(nodeModulesPath)) {
+            const error = new Error(`后端依赖缺失: ${nodeModulesPath}`);
+            console.error(error);
+            dialog.showErrorBox('启动失败', `后端依赖缺失:\n${nodeModulesPath}\n\n请重新安装应用`);
             reject(error);
             return;
         }
@@ -147,11 +157,13 @@ function startBackendServer() {
                 console.log('工作目录已切换到:', process.cwd());
             } catch (chdirError) {
                 console.error('切换目录失败:', chdirError);
+                dialog.showErrorBox('启动失败', `切换目录失败:\n${chdirError.message}`);
                 reject(chdirError);
                 return;
             }
             
             // 直接require服务器脚本
+            console.log('正在加载服务器脚本...');
             require(serverScript);
             
             // 恢复工作目录
@@ -165,6 +177,7 @@ function startBackendServer() {
             }, 2000);
         } catch (error) {
             console.error('后端启动失败:', error);
+            dialog.showErrorBox('启动失败', `后端服务器启动失败:\n${error.message}\n\n${error.stack}`);
             reject(error);
         }
     });
