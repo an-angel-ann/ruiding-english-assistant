@@ -8,41 +8,26 @@ delete process.env.CSC_LINK;
 delete process.env.CSC_KEY_PASSWORD;
 process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
 
-const { build, Arch } = require('electron-builder');
-const { Platform } = require('electron-builder');
+const { execSync } = require('child_process');
+const path = require('path');
 
-// 读取package.json配置
-const packageConfig = require('../package.json');
-
-// 空的签名函数
-const noSign = async (configuration) => {
-  console.log('  ⏭️  跳过代码签名:', configuration.path);
-};
-
-build({
-  targets: Platform.WINDOWS.createTarget(['nsis', 'portable'], Arch.x64),
-  config: {
-    ...packageConfig.build,
-    // 完全禁用签名
-    forceCodeSigning: false,
-    win: {
-      ...packageConfig.build.win,
-      sign: noSign,
-      signingHashAlgorithms: ['sha256'],
-      signDlls: false
-    },
-    nsis: {
-      ...packageConfig.build.nsis,
-      sign: noSign  // NSIS安装包也不签名
-    },
-    portable: {
-      ...packageConfig.build.portable
-      // portable不需要单独的sign配置
+// 使用命令行方式构建，通过环境变量完全禁用签名
+try {
+  console.log('🔨 开始构建Windows版本（无签名）...\n');
+  
+  execSync('npx electron-builder --win --x64', {
+    cwd: path.join(__dirname, '..'),
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false',
+      WIN_CSC_LINK: '',
+      CSC_LINK: ''
     }
-  }
-}).then(() => {
-  console.log('✅ Windows构建完成！');
-}).catch((error) => {
-  console.error('❌ 构建失败:', error);
+  });
+  
+  console.log('\n✅ Windows构建完成！');
+} catch (error) {
+  console.error('\n❌ 构建失败:', error.message);
   process.exit(1);
-});
+}
