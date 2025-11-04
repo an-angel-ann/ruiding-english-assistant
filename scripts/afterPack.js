@@ -14,11 +14,13 @@ exports.default = async function(context) {
     console.log(`  主机平台: ${hostPlatform}`);
     console.log(`  输出目录: ${appOutDir}`);
     
-    // 如果在Mac上打包Windows版本，跳过native模块编译
+    // 如果在Mac上打包Windows版本，使用预编译版本
     if (hostPlatform === 'darwin' && platform === 'win32') {
-        console.log(`  ⚠️  在Mac上打包Windows版本，跳过native模块编译`);
-        console.log(`  ℹ️  Windows版本需要在Windows系统上重新打包`);
-        return;
+        console.log(`  ⚠️  在Mac上打包Windows版本`);
+        console.log(`  ℹ️  Mac无法为Windows编译native模块`);
+        console.log(`  ℹ️  将使用npm安装的预编译版本`);
+        console.log(`  ⚠️  如果应用无法启动，请在Windows系统上重新构建`);
+        return; // 跳过重新编译，使用npm install时下载的预编译版本
     }
     
     let backendPath;
