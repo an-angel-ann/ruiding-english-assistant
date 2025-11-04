@@ -14,20 +14,30 @@ const { Platform } = require('electron-builder');
 // 读取package.json配置
 const packageConfig = require('../package.json');
 
+// 空的签名函数
+const noSign = async (configuration) => {
+  console.log('  ⏭️  跳过代码签名:', configuration.path);
+};
+
 build({
   targets: Platform.WINDOWS.createTarget(['nsis', 'portable'], Arch.x64),
   config: {
     ...packageConfig.build,
-    // 完全禁用签名 - 提供一个空的sign函数
+    // 完全禁用签名
     forceCodeSigning: false,
     win: {
       ...packageConfig.build.win,
-      // 提供一个什么都不做的sign函数来跳过签名
-      sign: async (configuration) => {
-        console.log('  ⏭️  跳过代码签名');
-      },
+      sign: noSign,
       signingHashAlgorithms: ['sha256'],
       signDlls: false
+    },
+    nsis: {
+      ...packageConfig.build.nsis,
+      sign: noSign  // NSIS安装包也不签名
+    },
+    portable: {
+      ...packageConfig.build.portable
+      // portable不需要单独的sign配置
     }
   }
 }).then(() => {
