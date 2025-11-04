@@ -12,7 +12,8 @@
     "build:mac": "electron-builder --mac --universal",
     "build:mac-intel": "electron-builder --mac --x64",
     "build:mac-arm": "electron-builder --mac --arm64",
-    "build:win": "electron-builder --win --x64",
+    "build:win": "node scripts/build-windows-unsigned.js",
+    "build:win-old": "electron-builder --win --x64",
     "build:all": "npm run rebuild && electron-builder --mac --win --universal",
     "pack": "electron-builder --dir",
     "postinstall": "electron-builder install-app-deps"
