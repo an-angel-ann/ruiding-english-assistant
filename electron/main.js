@@ -2,6 +2,29 @@ const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const Store = require('electron-store');
+const fs = require('fs');
+const os = require('os');
+
+// 设置日志文件
+const logFile = path.join(os.tmpdir(), 'ruiding-english-assistant.log');
+function log(message) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${message}\n`;
+    console.log(message);
+    try {
+        fs.appendFileSync(logFile, logMessage);
+    } catch (err) {
+        console.error('写入日志失败:', err);
+    }
+}
+
+log('=== 应用启动 ===');
+log(`Electron版本: ${process.versions.electron}`);
+log(`Node版本: ${process.versions.node}`);
+log(`平台: ${process.platform}`);
+log(`架构: ${process.arch}`);
+log(`应用路径: ${app.getAppPath()}`);
+log(`日志文件: ${logFile}`);
 
 const store = new Store();
 let mainWindow;
@@ -12,10 +35,11 @@ let frontendServer;
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-    console.log('应用已在运行，退出当前实例');
+    log('应用已在运行，退出当前实例');
     app.quit();
 } else {
     app.on('second-instance', (event, commandLine, workingDirectory) => {
+        log('检测到第二个实例，聚焦到现有窗口');
         // 当运行第二个实例时，聚焦到已存在的窗口
         if (mainWindow) {
             if (mainWindow.isMinimized()) mainWindow.restore();
@@ -27,9 +51,22 @@ if (!gotTheLock) {
 // 禁用硬件加速（解决某些Mac上的显示问题）
 app.disableHardwareAcceleration();
 
+// 捕获未处理的错误
+process.on('uncaughtException', (error) => {
+    log(`未捕获的异常: ${error.message}`);
+    log(error.stack);
+    dialog.showErrorBoxSync('应用错误', `发生未处理的错误:\n\n${error.message}\n\n日志文件: ${logFile}`);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    log(`未处理的Promise拒绝: ${reason}`);
+});
+
 // 创建主窗口
 function createWindow() {
-    mainWindow = new BrowserWindow({
+    log('开始创建主窗口');
+    try {
+        mainWindow = new BrowserWindow({
         width: 1400,
         height: 900,
         minWidth: 1200,
@@ -81,6 +118,14 @@ function createWindow() {
         require('electron').shell.openExternal(url);
         return { action: 'deny' };
     });
+    
+    log('主窗口创建成功');
+    } catch (error) {
+        log(`创建主窗口失败: ${error.message}`);
+        log(error.stack);
+        dialog.showErrorBoxSync('窗口创建失败', `无法创建应用窗口:\n\n${error.message}\n\n日志文件: ${logFile}`);
+        app.quit();
+    }
 }
 
 // 启动后端服务器
@@ -110,27 +155,27 @@ function startBackendServer() {
 
         const serverScript = path.join(backendPath, 'server.js');
 
-        console.log('=== 后端服务器启动信息 ===');
-        console.log('应用路径:', app.getAppPath());
-        console.log('资源路径:', process.resourcesPath);
-        console.log('后端路径:', backendPath);
-        console.log('服务器脚本:', serverScript);
-        console.log('是否打包:', app.isPackaged);
-        console.log('脚本是否存在:', fs.existsSync(serverScript));
+        log('=== 后端服务器启动信息 ===');
+        log(`应用路径: ${app.getAppPath()}`);
+        log(`资源路径: ${process.resourcesPath}`);
+        log(`后端路径: ${backendPath}`);
+        log(`服务器脚本: ${serverScript}`);
+        log(`是否打包: ${app.isPackaged}`);
+        log(`脚本是否存在: ${fs.existsSync(serverScript)}`);
 
         // 验证路径是否存在
         if (!fs.existsSync(backendPath)) {
             const error = new Error(`后端目录不存在: ${backendPath}`);
-            console.error(error);
-            dialog.showErrorBox('启动失败', `后端目录不存在:\n${backendPath}\n\n请重新安装应用`);
+            log(`错误: ${error.message}`);
+            dialog.showErrorBoxSync('启动失败', `后端目录不存在:\n${backendPath}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
 
         if (!fs.existsSync(serverScript)) {
             const error = new Error(`服务器脚本不存在: ${serverScript}`);
-            console.error(error);
-            dialog.showErrorBox('启动失败', `服务器脚本不存在:\n${serverScript}\n\n请重新安装应用`);
+            log(`错误: ${error.message}`);
+            dialog.showErrorBoxSync('启动失败', `服务器脚本不存在:\n${serverScript}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
@@ -139,8 +184,20 @@ function startBackendServer() {
         const nodeModulesPath = path.join(backendPath, 'node_modules');
         if (!fs.existsSync(nodeModulesPath)) {
             const error = new Error(`后端依赖缺失: ${nodeModulesPath}`);
-            console.error(error);
-            dialog.showErrorBox('启动失败', `后端依赖缺失:\n${nodeModulesPath}\n\n请重新安装应用`);
+            log(`错误: ${error.message}`);
+            dialog.showErrorBoxSync('启动失败', `后端依赖缺失:\n${nodeModulesPath}\n\n日志文件: ${logFile}`);
+            reject(error);
+            return;
+        }
+        
+        // 检查better-sqlite3
+        const sqlitePath = path.join(nodeModulesPath, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+        log(`检查better-sqlite3: ${sqlitePath}`);
+        log(`better-sqlite3存在: ${fs.existsSync(sqlitePath)}`);
+        if (!fs.existsSync(sqlitePath)) {
+            const error = new Error(`better-sqlite3.node不存在: ${sqlitePath}`);
+            log(`错误: ${error.message}`);
+            dialog.showErrorBoxSync('启动失败', `数据库模块缺失:\n${sqlitePath}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
@@ -322,27 +379,38 @@ function createMenu() {
 
 // 应用准备就绪
 app.whenReady().then(async () => {
+    log('应用准备就绪，开始初始化...');
     try {
         // 创建菜单
+        log('创建菜单...');
         createMenu();
         
         // 启动后端服务器
+        log('启动后端服务器...');
         await startBackendServer();
+        log('后端服务器启动成功');
         
         // 启动前端服务器
+        log('启动前端服务器...');
         await startFrontendServer();
+        log('前端服务器启动成功');
         
         // 创建窗口
+        log('创建主窗口...');
         createWindow();
 
         app.on('activate', () => {
+            log('应用被激活');
             if (BrowserWindow.getAllWindows().length === 0) {
                 createWindow();
             }
         });
+        
+        log('应用初始化完成');
     } catch (error) {
-        console.error('应用启动失败:', error);
-        dialog.showErrorBox('启动失败', '应用启动失败，请重试或联系技术支持。\n\n错误信息: ' + error.message);
+        log(`应用启动失败: ${error.message}`);
+        log(error.stack);
+        dialog.showErrorBoxSync('启动失败', `应用启动失败:\n\n${error.message}\n\n日志文件: ${logFile}`);
         app.quit();
     }
 });
