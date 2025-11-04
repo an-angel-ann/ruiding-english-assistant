@@ -18,12 +18,14 @@ build({
   targets: Platform.WINDOWS.createTarget(['nsis', 'portable'], Arch.x64),
   config: {
     ...packageConfig.build,
-    // 完全禁用签名
+    // 完全禁用签名 - 提供一个空的sign函数
     forceCodeSigning: false,
     win: {
       ...packageConfig.build.win,
-      // 不提供sign函数，electron-builder就不会尝试签名
-      sign: undefined,
+      // 提供一个什么都不做的sign函数来跳过签名
+      sign: async (configuration) => {
+        console.log('  ⏭️  跳过代码签名');
+      },
       signingHashAlgorithms: ['sha256'],
       signDlls: false
     }
