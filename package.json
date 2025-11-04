@@ -46,11 +46,7 @@
         "from": "backend",
         "to": "backend",
         "filter": [
-          "**/*",
-          "!data/*.db",
-          "!data/*.sqlite",
-          "!**/*.db",
-          "!**/*.sqlite"
+          "**/*"
         ]
       }
     ],
