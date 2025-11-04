@@ -8,14 +8,14 @@ delete process.env.CSC_LINK;
 delete process.env.CSC_KEY_PASSWORD;
 process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
 
-const { build } = require('electron-builder');
+const { build, Arch } = require('electron-builder');
 const { Platform } = require('electron-builder');
 
 // 读取package.json配置
 const packageConfig = require('../package.json');
 
 build({
-  targets: Platform.WINDOWS.createTarget(['nsis', 'portable'], null, 'x64'),
+  targets: Platform.WINDOWS.createTarget(['nsis', 'portable'], Arch.x64),
   config: {
     ...packageConfig.build,
     // 完全禁用签名
