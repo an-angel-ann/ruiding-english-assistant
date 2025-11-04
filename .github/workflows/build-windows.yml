@@ -40,6 +40,25 @@ jobs:
           npm install
           cd ..
       
+      - name: Rebuild native modules for Electron
+        run: |
+          cd backend
+          npm rebuild better-sqlite3 --build-from-source
+          cd ..
+        env:
+          npm_config_runtime: electron
+          npm_config_target: 28.3.3
+          npm_config_disturl: https://electronjs.org/headers
+      
+      - name: Verify better-sqlite3
+        run: |
+          if (Test-Path "backend\node_modules\better-sqlite3\build\Release\better_sqlite3.node") {
+            Write-Host "✅ better_sqlite3.node exists"
+          } else {
+            Write-Host "❌ better_sqlite3.node NOT found"
+            exit 1
+          }
+      
       - name: Build Windows x64
         run: npm run build:win
         env:

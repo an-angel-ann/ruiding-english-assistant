@@ -33,22 +33,27 @@ try {
     console.log('✅ Backend依赖已存在\n');
   }
   
-  // 2. 为Electron重新编译better-sqlite3
-  console.log('🔨 为Electron重新编译better-sqlite3...\n');
-  try {
-    execSync('npm rebuild better-sqlite3 --build-from-source', {
-      cwd: backendPath,
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        npm_config_runtime: 'electron',
-        npm_config_target: '28.3.3',
-        npm_config_disturl: 'https://electronjs.org/headers'
-      }
-    });
-    console.log('✅ better-sqlite3重新编译完成\n');
-  } catch (rebuildError) {
-    console.log('⚠️  better-sqlite3重新编译失败，继续构建...\n');
+  // 2. 检查better-sqlite3是否存在
+  const sqliteNodePath = path.join(backendPath, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+  if (fs.existsSync(sqliteNodePath)) {
+    console.log('✅ better_sqlite3.node已存在，跳过重新编译\n');
+  } else {
+    console.log('⚠️  better_sqlite3.node不存在，尝试重新编译...\n');
+    try {
+      execSync('npm rebuild better-sqlite3 --build-from-source', {
+        cwd: backendPath,
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          npm_config_runtime: 'electron',
+          npm_config_target: '28.3.3',
+          npm_config_disturl: 'https://electronjs.org/headers'
+        }
+      });
+      console.log('✅ better-sqlite3重新编译完成\n');
+    } catch (rebuildError) {
+      console.log('⚠️  better-sqlite3重新编译失败，继续构建...\n');
+    }
   }
   
   // 2. 使用 --config 参数直接禁用签名
