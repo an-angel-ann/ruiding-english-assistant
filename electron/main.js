@@ -28,6 +28,7 @@ log(`日志文件: ${logFile}`);
 
 const store = new Store();
 let mainWindow;
+let smtpSetupWindow;
 let backendProcess;
 let frontendServer;
 
@@ -61,6 +62,89 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
     log(`未处理的Promise拒绝: ${reason}`);
 });
+
+// 创建SMTP配置窗口
+function createSmtpSetupWindow() {
+    log('创建SMTP配置窗口');
+    smtpSetupWindow = new BrowserWindow({
+        width: 700,
+        height: 800,
+        resizable: false,
+        title: '邮件服务配置',
+        icon: path.join(__dirname, '../build/icon.png'),
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        backgroundColor: '#ffffff',
+        show: false
+    });
+
+    smtpSetupWindow.once('ready-to-show', () => {
+        smtpSetupWindow.show();
+    });
+
+    smtpSetupWindow.loadFile(path.join(__dirname, 'smtp-setup.html'));
+
+    smtpSetupWindow.on('closed', () => {
+        smtpSetupWindow = null;
+    });
+}
+
+// 测试SMTP配置
+async function testSmtpConfig(config) {
+    return new Promise((resolve) => {
+        try {
+            const nodemailer = require(path.join(__dirname, '../backend/node_modules/nodemailer'));
+            const transporter = nodemailer.createTransport({
+                host: config.host,
+                port: config.port,
+                secure: config.port === 465,
+                auth: {
+                    user: config.user,
+                    pass: config.pass
+                }
+            });
+
+            // 验证连接
+            transporter.verify((error, success) => {
+                if (error) {
+                    log(`SMTP测试失败: ${error.message}`);
+                    resolve({ success: false, error: error.message });
+                } else {
+                    log('SMTP测试成功');
+                    resolve({ success: true });
+                }
+            });
+        } catch (error) {
+            log(`SMTP测试异常: ${error.message}`);
+            resolve({ success: false, error: error.message });
+        }
+    });
+}
+
+// 保存SMTP配置
+function saveSmtpConfig(config) {
+    try {
+        store.set('smtpConfig', config);
+        log('SMTP配置已保存');
+        return true;
+    } catch (error) {
+        log(`保存SMTP配置失败: ${error.message}`);
+        return false;
+    }
+}
+
+// 获取SMTP配置
+function getSmtpConfig() {
+    return store.get('smtpConfig', null);
+}
+
+// 检查是否需要显示SMTP配置向导
+function needsSmtpSetup() {
+    const config = getSmtpConfig();
+    return !config || !config.user || !config.pass;
+}
 
 // 创建主窗口
 function createWindow() {
@@ -208,33 +292,19 @@ function startBackendServer() {
             process.env.PORT = '3001';
             
             // 配置SMTP邮件服务
-            // 尝试从配置文件读取SMTP配置
-            try {
-                const configPath = app.isPackaged 
-                    ? path.join(process.resourcesPath, 'smtp-config.json')
-                    : path.join(__dirname, '../smtp-config.json');
-                
-                if (fs.existsSync(configPath)) {
-                    const smtpConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                    process.env.SMTP_HOST = smtpConfig.host || 'smtp.126.com';
-                    process.env.SMTP_PORT = smtpConfig.port || '465';
-                    process.env.SMTP_USER = smtpConfig.user || 'o_oangela@126.com';
-                    process.env.SMTP_PASS = smtpConfig.pass || '';
-                    log('✅ SMTP配置已加载');
-                } else {
-                    // 如果没有配置文件，尝试从环境变量读取
-                    process.env.SMTP_HOST = 'smtp.126.com';
-                    process.env.SMTP_PORT = '465';
-                    process.env.SMTP_USER = 'o_oangela@126.com';
-                    process.env.SMTP_PASS = process.env.SMTP_AUTH_CODE || '';
-                    log('⚠️ 未找到smtp-config.json，使用默认配置');
-                }
-            } catch (configError) {
-                log(`⚠️ 读取SMTP配置失败: ${configError.message}`);
-                // 使用默认配置
-                process.env.SMTP_HOST = 'smtp.126.com';
-                process.env.SMTP_PORT = '465';
-                process.env.SMTP_USER = 'o_oangela@126.com';
+            // 从electron-store读取用户配置的SMTP
+            const smtpConfig = getSmtpConfig();
+            if (smtpConfig && smtpConfig.user && smtpConfig.pass) {
+                process.env.SMTP_HOST = smtpConfig.host;
+                process.env.SMTP_PORT = smtpConfig.port.toString();
+                process.env.SMTP_USER = smtpConfig.user;
+                process.env.SMTP_PASS = smtpConfig.pass;
+                log(`✅ SMTP配置已加载: ${smtpConfig.user}`);
+            } else {
+                log('⚠️ SMTP未配置，邮件功能将不可用');
+                process.env.SMTP_HOST = '';
+                process.env.SMTP_PORT = '';
+                process.env.SMTP_USER = '';
                 process.env.SMTP_PASS = '';
             }
             
@@ -438,9 +508,33 @@ function createMenu() {
     Menu.setApplicationMenu(menu);
 }
 
-// 应用准备就绪
-app.whenReady().then(async () => {
-    log('应用准备就绪，开始初始化...');
+// IPC处理程序
+ipcMain.handle('test-smtp-config', async (event, config) => {
+    return await testSmtpConfig(config);
+});
+
+ipcMain.on('smtp-config-complete', (event, config) => {
+    log('用户完成SMTP配置');
+    saveSmtpConfig(config);
+    if (smtpSetupWindow) {
+        smtpSetupWindow.close();
+    }
+    // 继续启动应用
+    startApplication();
+});
+
+ipcMain.on('smtp-config-skip', () => {
+    log('用户跳过SMTP配置');
+    if (smtpSetupWindow) {
+        smtpSetupWindow.close();
+    }
+    // 继续启动应用（但邮件功能不可用）
+    startApplication();
+});
+
+// 启动应用主流程
+async function startApplication() {
+    log('开始启动应用主流程...');
     try {
         // 创建菜单
         log('创建菜单...');
@@ -461,13 +555,6 @@ app.whenReady().then(async () => {
         log('创建主窗口...');
         await createWindow();
         log('✅ 主窗口创建成功');
-
-        app.on('activate', () => {
-            log('应用被激活');
-            if (BrowserWindow.getAllWindows().length === 0) {
-                createWindow();
-            }
-        });
         
         log('🎉 应用初始化完成');
     } catch (error) {
@@ -476,6 +563,31 @@ app.whenReady().then(async () => {
         dialog.showErrorBoxSync('启动失败', `应用启动失败:\n\n${error.message}\n\n日志文件: ${logFile}`);
         app.quit();
     }
+}
+
+// 应用准备就绪
+app.whenReady().then(async () => {
+    log('应用准备就绪，开始初始化...');
+    
+    // 检查是否需要SMTP配置
+    if (needsSmtpSetup()) {
+        log('首次启动，显示SMTP配置向导');
+        createSmtpSetupWindow();
+    } else {
+        log('SMTP已配置，直接启动应用');
+        await startApplication();
+    }
+
+    app.on('activate', () => {
+        log('应用被激活');
+        if (BrowserWindow.getAllWindows().length === 0) {
+            if (needsSmtpSetup()) {
+                createSmtpSetupWindow();
+            } else {
+                createWindow();
+            }
+        }
+    });
 });
 
 // 所有窗口关闭

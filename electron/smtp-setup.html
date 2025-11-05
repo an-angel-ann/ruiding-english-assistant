@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮件服务配置 - 睿叮AI英语学习助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group small {
+            display: block;
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .help-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        
+        .help-link:hover {
+            text-decoration: underline;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #f44;
+            color: #c33;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .success-message {
+            background: #efe;
+            border-left: 4px solid #4c4;
+            color: #363;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .steps {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .steps ol {
+            margin-left: 20px;
+            color: #555;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        
+        .steps a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .steps a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 邮件服务配置</h1>
+            <p>首次使用需要配置邮件服务，用于发送注册验证码</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>💡 为什么需要配置？</h3>
+            <p>• 发送注册验证码，确保账户唯一性</p>
+            <p>• 支持密码重置功能</p>
+            <p>• 使用您自己的邮箱，更安全可靠</p>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <form id="smtpForm">
+            <div class="form-group">
+                <label>邮箱服务商</label>
+                <select id="emailProvider" onchange="updateEmailConfig()">
+                    <option value="126">126邮箱 (推荐)</option>
+                    <option value="163">163邮箱</option>
+                    <option value="qq">QQ邮箱</option>
+                    <option value="gmail">Gmail</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>发件邮箱地址</label>
+                <input type="email" id="emailUser" placeholder="your_email@126.com" required>
+                <small>用于发送验证码的邮箱地址</small>
+            </div>
+            
+            <div class="form-group">
+                <label>SMTP授权码</label>
+                <input type="password" id="emailPass" placeholder="请输入SMTP授权码（不是邮箱密码）" required>
+                <small>
+                    <a href="#" class="help-link" onclick="showHelp(); return false;">如何获取授权码？</a>
+                </small>
+            </div>
+            
+            <div id="customConfig" style="display: none;">
+                <div class="form-group">
+                    <label>SMTP服务器</label>
+                    <input type="text" id="smtpHost" placeholder="smtp.example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>SMTP端口</label>
+                    <input type="number" id="smtpPort" placeholder="465" value="465">
+                </div>
+            </div>
+            
+            <div class="steps" id="helpSteps" style="display: none;">
+                <h4 style="margin-bottom: 10px; color: #667eea;">📖 获取授权码步骤：</h4>
+                <ol id="helpContent"></ol>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>正在测试邮件服务...</p>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="skipSetup()">稍后配置</button>
+                <button type="submit" class="btn btn-primary">保存并测试</button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        const emailConfigs = {
+            '126': {
+                host: 'smtp.126.com',
+                port: 465,
+                help: [
+                    '登录 <a href="https://mail.126.com" target="_blank">126邮箱</a>',
+                    '点击右上角"设置" → "POP3/SMTP/IMAP"',
+                    '找到"SMTP服务"，点击"开启"',
+                    '按提示验证手机号',
+                    '系统会生成授权码，复制该授权码'
+                ]
+            },
+            '163': {
+                host: 'smtp.163.com',
+                port: 465,
+                help: [
+                    '登录 <a href="https://mail.163.com" target="_blank">163邮箱</a>',
+                    '点击"设置" → "POP3/SMTP/IMAP"',
+                    '开启"SMTP服务"',
+                    '验证手机号后获取授权码'
+                ]
+            },
+            'qq': {
+                host: 'smtp.qq.com',
+                port: 465,
+                help: [
+                    '登录 <a href="https://mail.qq.com" target="_blank">QQ邮箱</a>',
+                    '点击"设置" → "账户"',
+                    '找到"POP3/IMAP/SMTP服务"',
+                    '开启"SMTP服务"',
+                    '发送短信后获取授权码'
+                ]
+            },
+            'gmail': {
+                host: 'smtp.gmail.com',
+                port: 587,
+                help: [
+                    '登录 <a href="https://myaccount.google.com/security" target="_blank">Google账户安全设置</a>',
+                    '开启"两步验证"',
+                    '生成"应用专用密码"',
+                    '选择"邮件"和设备类型',
+                    '复制生成的16位密码'
+                ]
+            }
+        };
+        
+        function updateEmailConfig() {
+            const provider = document.getElementById('emailProvider').value;
+            const customConfig = document.getElementById('customConfig');
+            const smtpHost = document.getElementById('smtpHost');
+            const smtpPort = document.getElementById('smtpPort');
+            
+            if (provider === 'custom') {
+                customConfig.style.display = 'block';
+            } else {
+                customConfig.style.display = 'none';
+                const config = emailConfigs[provider];
+                if (config) {
+                    smtpHost.value = config.host;
+                    smtpPort.value = config.port;
+                }
+            }
+        }
+        
+        function showHelp() {
+            const provider = document.getElementById('emailProvider').value;
+            const helpSteps = document.getElementById('helpSteps');
+            const helpContent = document.getElementById('helpContent');
+            
+            if (provider !== 'custom' && emailConfigs[provider]) {
+                helpContent.innerHTML = emailConfigs[provider].help.map(step => `<li>${step}</li>`).join('');
+                helpSteps.style.display = 'block';
+            }
+        }
+        
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        document.getElementById('smtpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+            
+            const provider = document.getElementById('emailProvider').value;
+            const emailUser = document.getElementById('emailUser').value.trim();
+            const emailPass = document.getElementById('emailPass').value.trim();
+            
+            if (!emailUser || !emailPass) {
+                showError('请填写完整的邮箱信息');
+                return;
+            }
+            
+            let smtpHost, smtpPort;
+            if (provider === 'custom') {
+                smtpHost = document.getElementById('smtpHost').value.trim();
+                smtpPort = parseInt(document.getElementById('smtpPort').value);
+                if (!smtpHost || !smtpPort) {
+                    showError('请填写完整的SMTP服务器信息');
+                    return;
+                }
+            } else {
+                const config = emailConfigs[provider];
+                smtpHost = config.host;
+                smtpPort = config.port;
+            }
+            
+            const smtpConfig = {
+                host: smtpHost,
+                port: smtpPort,
+                user: emailUser,
+                pass: emailPass
+            };
+            
+            // 显示加载状态
+            document.getElementById('loading').style.display = 'block';
+            document.querySelector('.btn-primary').disabled = true;
+            
+            try {
+                // 发送配置到主进程进行测试
+                const result = await ipcRenderer.invoke('test-smtp-config', smtpConfig);
+                
+                if (result.success) {
+                    showSuccess('✅ 邮件服务配置成功！正在启动应用...');
+                    setTimeout(() => {
+                        ipcRenderer.send('smtp-config-complete', smtpConfig);
+                    }, 1500);
+                } else {
+                    showError(`配置失败: ${result.error}`);
+                }
+            } catch (error) {
+                showError(`配置失败: ${error.message}`);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.querySelector('.btn-primary').disabled = false;
+            }
+        });
+        
+        function skipSetup() {
+            if (confirm('跳过配置后，用户将无法注册新账户。\n\n您可以稍后在应用设置中配置邮件服务。\n\n确定要跳过吗？')) {
+                ipcRenderer.send('smtp-config-skip');
+            }
+        }
+        
+        // 初始化
+        updateEmailConfig();
+    </script>
+</body>
+</html>
