@@ -116,6 +116,11 @@
 }
 </style>
 <body>
+    <!-- 启动动画覆盖层 -->
+    <div id="splash-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; justify-content: center; align-items: center;">
+        <video id="splash-video" style="width: 100%; height: 100%; object-fit: contain;" muted autoplay></video>
+    </div>
+    
     <div class="container">
         <!-- 语音选择器（固定在左上角） -->
         <div id="voiceSelector" class="voice-selector" style="display: none;">
@@ -125,6 +130,20 @@
                 <select id="voiceSelect" onchange="changeVoice()" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; margin-bottom: 10px;">
                     <option value="">加载中...</option>
                 </select>
+                
+                <!-- 语音包安装提示 -->
+                <div id="voicePackHint" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 12px; line-height: 1.6;">
+                    <div style="font-weight: bold; color: #856404; margin-bottom: 6px;">⚠️ 未检测到英语语音包</div>
+                    <div style="color: #856404;">
+                        <strong>安装步骤：</strong><br>
+                        1. 打开 <strong>Windows 设置</strong><br>
+                        2. 进入 <strong>时间和语言 → 语音</strong><br>
+                        3. 点击 <strong>"添加语音"</strong><br>
+                        4. 选择 <strong>英语（美国）</strong> 或 <strong>英语（英国）</strong><br>
+                        5. 下载并安装后 <strong>重启应用</strong>
+                    </div>
+                </div>
+                
                 <div style="display: flex; gap: 8px; margin-top: 8px;">
                     <button onclick="testVoice()" style="flex: 1; padding: 6px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">试听</button>
                     <button onclick="closeVoicePanel()" style="flex: 1; padding: 6px; background: #e0e0e0; color: #666; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">关闭</button>
@@ -836,6 +855,12 @@ function populateVoiceSelector(voices) {
         option.selected = true;
         voiceSelect.appendChild(option);
         
+        // 显示安装提示
+        const voicePackHint = document.getElementById('voicePackHint');
+        if (voicePackHint) {
+            voicePackHint.style.display = 'block';
+        }
+        
         console.warn('⚠️ 系统未安装英语语音包！');
         console.log('💡 解决方案：');
         console.log('1. 打开 Windows 设置 -> 时间和语言 -> 语音');
@@ -1225,5 +1250,36 @@ window.addEventListener('click', function(event) {
         }
     }
 })();
+
+// 处理启动动画
+if (window.electron && window.electron.ipcRenderer) {
+    window.electron.ipcRenderer.on('show-splash', (event, videoPath) => {
+        console.log('收到启动动画请求，视频路径:', videoPath);
+        const splashOverlay = document.getElementById('splash-overlay');
+        const splashVideo = document.getElementById('splash-video');
+        
+        if (splashOverlay && splashVideo) {
+            splashVideo.src = videoPath;
+            splashOverlay.style.display = 'flex';
+            
+            // 视频播放结束后隐藏覆盖层
+            splashVideo.addEventListener('ended', () => {
+                console.log('启动动画播放完成');
+                splashOverlay.style.display = 'none';
+            });
+            
+            // 视频加载失败时也隐藏
+            splashVideo.addEventListener('error', (err) => {
+                console.error('启动动画加载失败:', err);
+                splashOverlay.style.display = 'none';
+            });
+            
+            // 最长显示10秒
+            setTimeout(() => {
+                splashOverlay.style.display = 'none';
+            }, 10000);
+        }
+    });
+}
 </script>
 </html>

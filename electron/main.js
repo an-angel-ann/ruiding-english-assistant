@@ -303,6 +303,23 @@ function createWindow() {
 
     // 加载应用
     mainWindow.loadURL('http://localhost:8080');
+    
+    // 页面加载完成后发送视频路径以显示启动动画
+    mainWindow.webContents.on('did-finish-load', () => {
+        // 确定视频文件路径
+        let videoPath;
+        if (app.isPackaged) {
+            videoPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'welcomeflash.mp4');
+        } else {
+            videoPath = path.join(__dirname, '..', 'welcomeflash.mp4');
+        }
+        
+        log(`视频文件路径: ${videoPath}`);
+        log(`视频文件是否存在: ${fs.existsSync(videoPath)}`);
+        
+        // 发送视频路径给渲染进程
+        mainWindow.webContents.send('show-splash', videoPath);
+    });
 
     // 开发模式下打开开发者工具
     if (process.argv.includes('--dev')) {
@@ -715,10 +732,7 @@ async function startApplication() {
 app.whenReady().then(async () => {
     log('应用准备就绪，开始初始化...');
     
-    // 先显示启动画面
-    createSplashWindow();
-    
-    // 在后台启动应用
+    // 直接启动应用（启动画面将在主窗口内显示）
     await startApplication();
 
     app.on('activate', () => {

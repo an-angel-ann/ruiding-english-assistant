@@ -12,3 +12,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openSmtpSetup: () => ipcRenderer.send('open-smtp-setup'),
     onSmtpConfigUpdated: (callback) => ipcRenderer.on('smtp-config-updated', callback)
 });
+
+// 暴露 electron 对象用于启动动画
+contextBridge.exposeInMainWorld('electron', {
+    ipcRenderer: {
+        on: (channel, func) => {
+            const validChannels = ['show-splash'];
+            if (validChannels.includes(channel)) {
+                ipcRenderer.on(channel, (event, ...args) => func(event, ...args));
+            }
+        }
+    }
+});
