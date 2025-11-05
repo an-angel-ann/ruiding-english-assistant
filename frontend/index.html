@@ -1321,10 +1321,10 @@ if (window.electron && window.electron.ipcRenderer) {
                     if (fallback) {
                         fallback.style.display = 'block';
                     }
-                    // 3秒后关闭
+                    // 5秒后关闭（与视频时长一致）
                     setTimeout(() => {
                         splashOverlay.style.display = 'none';
-                    }, 3000);
+                    }, 5000);
                 }
             }, { once: true });
             

@@ -2,7 +2,26 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
+
+// 加载 SMTP 配置到环境变量
+try {
+    const smtpConfigPath = path.join(__dirname, '..', 'smtp-config.json');
+    if (fs.existsSync(smtpConfigPath)) {
+        const smtpConfig = JSON.parse(fs.readFileSync(smtpConfigPath, 'utf8'));
+        process.env.SMTP_HOST = smtpConfig.host;
+        process.env.SMTP_PORT = smtpConfig.port.toString();
+        process.env.SMTP_USER = smtpConfig.user;
+        process.env.SMTP_PASS = smtpConfig.pass;
+        console.log('✅ SMTP 配置已加载到环境变量');
+    } else {
+        console.warn('⚠️ smtp-config.json 不存在，SMTP 功能将不可用');
+    }
+} catch (error) {
+    console.error('❌ 加载 SMTP 配置失败:', error.message);
+}
 
 const { testConnection } = require('./src/config/database');
 const authRoutes = require('./src/routes/auth');

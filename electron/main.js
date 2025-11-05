@@ -268,8 +268,26 @@ async function testSmtpConfig(config) {
 // 保存SMTP配置
 function saveSmtpConfig(config) {
     try {
+        // 保存到 Electron Store
         store.set('smtpConfig', config);
-        log('SMTP配置已保存');
+        
+        // 同时保存到 smtp-config.json 文件，供 backend 使用
+        const smtpConfigPath = path.join(__dirname, '..', 'smtp-config.json');
+        fs.writeFileSync(smtpConfigPath, JSON.stringify(config, null, 2), 'utf8');
+        
+        log('SMTP配置已保存到 Store 和文件');
+        
+        // 重启 backend 进程以加载新配置
+        if (backendProcess) {
+            log('重启 backend 进程以加载新的 SMTP 配置...');
+            backendProcess.kill();
+            backendProcess = null;
+            // 延迟重启，确保端口释放
+            setTimeout(() => {
+                startBackend();
+            }, 1000);
+        }
+        
         return true;
     } catch (error) {
         log(`保存SMTP配置失败: ${error.message}`);
