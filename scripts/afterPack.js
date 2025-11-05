@@ -23,9 +23,10 @@ exports.default = async function(context) {
     
     const sqliteNodePath = path.join(backendPath, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
     if (fs.existsSync(sqliteNodePath)) {
-        console.log(`  ✅ better_sqlite3.node 已存在`);
+        console.log(`  ✅ better_sqlite3.node 已存在: ${sqliteNodePath}`);
     } else {
-        console.log(`  ⚠️  better_sqlite3.node 不存在，但继续构建`);
+        console.error(`  ❌ better_sqlite3.node 不存在: ${sqliteNodePath}`);
+        throw new Error(`better_sqlite3.node not found at ${sqliteNodePath}. Build must be stopped.`);
     }
     
     console.log(`  ✅ afterPack 完成`);
