@@ -1509,8 +1509,19 @@ async function checkSubscriptionAndShowPanel(useCache = false) {
         const data = await response.json();
         console.log('📊 用户订阅状态:', data);
         
+        // 检查是否是特殊账户
+        const isSpecialAccount = data.user && (data.user.isSpecialAccount || data.user.username === 'ruiding.vip.user' || data.user.email === 'ruiding.vip.user');
+        
         // 检查是否有有效订阅
-        const hasValidSubscription = data.subscription && new Date(data.subscription.endDate) > new Date();
+        let hasValidSubscription = false;
+        if (isSpecialAccount) {
+            // 特殊账户永久有效
+            console.log('🔑 特殊账户，永久有效');
+            hasValidSubscription = true;
+        } else if (data.subscription) {
+            // 普通用户检查订阅到期时间
+            hasValidSubscription = new Date(data.subscription.endDate) > new Date();
+        }
         
         console.log('✅ 有效订阅:', hasValidSubscription);
         
