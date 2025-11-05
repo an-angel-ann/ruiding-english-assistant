@@ -46,8 +46,8 @@ router.post('/register', [
         // 创建用户
         const userId = await User.create(email, password, username);
 
-        // 自动创建7天免费试用订阅
-        const trialDays = parseInt(process.env.FREE_TRIAL_DAYS) || 7;
+        // 自动创建3天免费试用订阅
+        const trialDays = parseInt(process.env.FREE_TRIAL_DAYS) || 3;
         const startDate = new Date();
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + trialDays);

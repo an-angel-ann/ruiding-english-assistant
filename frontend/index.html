@@ -201,7 +201,7 @@
                     </a>
                 </div>
                 
-                <p class="subscription-trial">新用户注册即享7天免费体验</p>
+                <p class="subscription-trial">新用户注册即享一周1元体验</p>
             </div>
         </div>
 
@@ -1373,5 +1373,57 @@ if (window.electron && window.electron.ipcRenderer) {
         }
     });
 }
+
+// 页面加载时检查订阅状态并决定显示哪个面板
+(async function checkSubscriptionAndShowPanel() {
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+        // 未登录，跳转到登录页
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    try {
+        // 获取用户信息和订阅状态
+        const response = await fetch('http://localhost:3001/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            // Token 无效，跳转到登录页
+            localStorage.removeItem('authToken');
+            window.location.href = 'auth.html';
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('📊 用户订阅状态:', data);
+        
+        // 检查是否有有效订阅
+        const hasValidSubscription = data.subscription && new Date(data.subscription.endDate) > new Date();
+        
+        console.log('✅ 有效订阅:', hasValidSubscription);
+        
+        if (hasValidSubscription) {
+            // 有有效订阅，显示模式选择面板
+            console.log('→ 显示模式选择面板');
+            document.getElementById('modeSelectionPanel').style.display = 'block';
+            document.getElementById('apiKeyPanel').style.display = 'none';
+        } else {
+            // 没有有效订阅，显示订阅面板
+            console.log('→ 显示订阅面板');
+            document.getElementById('apiKeyPanel').style.display = 'block';
+            document.getElementById('modeSelectionPanel').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('❌ 检查订阅状态失败:', error);
+        // 出错时默认显示订阅面板
+        document.getElementById('apiKeyPanel').style.display = 'block';
+        document.getElementById('modeSelectionPanel').style.display = 'none';
+    }
+})();
 </script>
 </html>
