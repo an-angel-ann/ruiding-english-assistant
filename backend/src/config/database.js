@@ -1,7 +1,8 @@
 require('dotenv').config();
 
 // 根据环境变量选择数据库
-const USE_SQLITE = process.env.USE_SQLITE === 'true';
+// 在打包的Electron应用中默认使用SQLite
+const USE_SQLITE = process.env.USE_SQLITE === 'true' || process.versions.electron;
 
 if (USE_SQLITE) {
     // 使用SQLite（用于本地测试）
