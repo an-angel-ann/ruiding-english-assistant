@@ -9,7 +9,7 @@ const { generateToken, authenticateToken } = require('../middleware/auth');
 const emailService = USE_SQLITE ? require('../utils/email-service-sqlite') : require('../utils/email-service');
 console.log('🔧 使用邮件服务:', USE_SQLITE ? 'SQLite版本' : 'MySQL版本');
 const { pool } = USE_SQLITE ? {} : require('../config/database');
-const { db } = USE_SQLITE ? require('../config/database') : {};
+const { db } = USE_SQLITE ? require('../config/database-sqlite') : {};
 
 const express = require('express');
 const router = express.Router();
@@ -80,8 +80,14 @@ router.post('/register', [
             }
         });
     } catch (error) {
-        console.error('注册错误:', error);
-        res.status(500).json({ error: '注册失败，请稍后重试' });
+        console.error('❌ 注册错误:', error);
+        console.error('错误堆栈:', error.stack);
+        console.error('错误详情:', {
+            message: error.message,
+            code: error.code,
+            errno: error.errno
+        });
+        res.status(500).json({ error: '注册失败，请稍后重试: ' + error.message });
     }
 });
 
@@ -265,8 +271,14 @@ router.post('/login', [
             } : null
         });
     } catch (error) {
-        console.error('登录错误:', error);
-        res.status(500).json({ error: '登录失败，请稍后重试' });
+        console.error('❌ 登录错误:', error);
+        console.error('错误堆栈:', error.stack);
+        console.error('错误详情:', {
+            message: error.message,
+            code: error.code,
+            errno: error.errno
+        });
+        res.status(500).json({ error: '登录失败，请稍后重试: ' + error.message });
     }
 });
 
