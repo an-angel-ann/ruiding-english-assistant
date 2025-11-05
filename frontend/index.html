@@ -669,13 +669,30 @@ function populateVoiceSelector(voices) {
     };
     
     // 美式英语白名单（按顺序）
-    const allowedUSVoices = ['Aaron', 'Nicky', 'Samantha', 'Fred', 'Alex', 'Google US English', 'Google', 'Microsoft'];
+    // macOS: Aaron, Nicky, Samantha, Fred, Alex
+    // Windows: Zira, David, Mark, Guy, Aria
+    const allowedUSVoices = [
+        'Aaron', 'Nicky', 'Samantha', 'Fred', 'Alex',  // macOS
+        'Zira', 'David', 'Mark', 'Guy', 'Aria',        // Windows
+        'Google US English', 'Google', 'Microsoft'
+    ];
     // 英式英语白名单（按顺序）
-    const allowedGBVoices = ['Arthur', 'Daniel', 'Martha', 'Oliver', 'Google UK English', 'Google', 'Microsoft'];
-    // 趣味发音名单
+    // macOS: Arthur, Daniel, Martha, Oliver
+    // Windows: Hazel, George, Susan
+    const allowedGBVoices = [
+        'Arthur', 'Daniel', 'Martha', 'Oliver',        // macOS
+        'Hazel', 'George', 'Susan',                    // Windows
+        'Google UK English', 'Google', 'Microsoft'
+    ];
+    // 趣味发音名单（主要是macOS）
     const funVoices = ['Bubbles', 'Trinoids', 'Zarvox'];
     // 其他发音名单
-    const allowedOtherVoices = ['Catherine', 'Gordon', 'Moira', 'Karen', 'Fiona', 'Tessa'];
+    // macOS: Catherine, Gordon, Moira, Karen, Fiona, Tessa
+    // Windows: 其他英语语音
+    const allowedOtherVoices = [
+        'Catherine', 'Gordon', 'Moira', 'Karen', 'Fiona', 'Tessa',  // macOS
+        'Linda', 'Richard', 'Heera', 'Ravi'                         // Windows其他
+    ];
     
     // 调试：打印所有英语语音
     console.log('🔍 可用的英语语音列表:');
