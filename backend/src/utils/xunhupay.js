@@ -50,10 +50,13 @@ class XunhuPay {
 
             const response = await axios.post(url, null, {
                 params: params,
-                timeout: 10000
+                timeout: 10000,
+                maxContentLength: 50 * 1024 * 1024, // 50MB
+                maxBodyLength: 50 * 1024 * 1024 // 50MB
             });
 
-            console.log('✅ 虎皮椒响应:', response.data);
+            console.log('✅ 虎皮椒响应状态:', response.status);
+            console.log('✅ 虎皮椒响应数据:', JSON.stringify(response.data).substring(0, 500));
 
             if (response.data.errcode === 0) {
                 const paymentUrl = response.data.url;
@@ -70,8 +73,14 @@ class XunhuPay {
 
         } catch (error) {
             console.error('❌ 虎皮椒创建订单失败:', error.message);
+            console.error('错误详情:', {
+                code: error.code,
+                errno: error.errno,
+                syscall: error.syscall
+            });
             if (error.response) {
-                console.error('响应数据:', error.response.data);
+                console.error('响应状态:', error.response.status);
+                console.error('响应头:', error.response.headers);
             }
             throw error;
         }

@@ -1377,21 +1377,43 @@ if (window.electron && window.electron.ipcRenderer) {
 // 页面加载时检查订阅状态并决定显示哪个面板
 // 延迟执行，等待启动动画播放完成
 let splashCompleted = false;
+let splashStarted = false;
 
-// 监听启动动画完成事件
+// 检查URL参数，判断是否使用缓存
+const urlParams = new URLSearchParams(window.location.search);
+const useCache = urlParams.get('useCache') === 'true';
+
+// 监听启动动画事件
 if (window.electron && window.electron.ipcRenderer) {
-    // Electron环境，等待启动动画
+    // Electron环境，监听启动动画
+    window.electron.ipcRenderer.on('show-splash', (event, videoPath) => {
+        console.log('🎬 启动动画开始播放');
+        splashStarted = true;
+        
+        // 等待动画播放完成（6秒）
+        setTimeout(() => {
+            console.log('✅ 启动动画播放完成');
+            splashCompleted = true;
+            checkSubscriptionAndShowPanel(useCache);
+        }, 6000);
+    });
+    
+    // 如果3秒内没有收到启动动画事件，直接执行检查
     setTimeout(() => {
-        splashCompleted = true;
-        checkSubscriptionAndShowPanel();
-    }, 6000); // 等待6秒（启动动画约5秒）
+        if (!splashStarted) {
+            console.log('⚠️ 未收到启动动画事件，直接执行检查');
+            splashCompleted = true;
+            checkSubscriptionAndShowPanel(useCache);
+        }
+    }, 3000);
 } else {
     // 非Electron环境，立即执行
+    console.log('🌐 非Electron环境，立即执行检查');
     splashCompleted = true;
-    checkSubscriptionAndShowPanel();
+    checkSubscriptionAndShowPanel(useCache);
 }
 
-async function checkSubscriptionAndShowPanel() {
+async function checkSubscriptionAndShowPanel(useCache = false) {
     if (!splashCompleted) {
         console.log('⏳ 等待启动动画完成...');
         return;
@@ -1404,6 +1426,27 @@ async function checkSubscriptionAndShowPanel() {
         console.log('❌ 未登录，跳转到登录页');
         window.location.href = 'auth.html';
         return;
+    }
+    
+    // 先使用缓存快速显示，然后再验证
+    const cachedSubscription = localStorage.getItem('subscriptionCache');
+    if (useCache && cachedSubscription) {
+        try {
+            const cache = JSON.parse(cachedSubscription);
+            const cacheAge = Date.now() - cache.timestamp;
+            
+            // 缓存有效期：30秒
+            if (cacheAge < 30000) {
+                console.log('⚡ 使用缓存数据快速显示');
+                showPanelBySubscription(cache.hasValidSubscription);
+                
+                // 后台验证订阅状态
+                verifySubscriptionInBackground(token);
+                return;
+            }
+        } catch (e) {
+            console.error('缓存解析失败:', e);
+        }
     }
     
     try {
@@ -1419,6 +1462,7 @@ async function checkSubscriptionAndShowPanel() {
             // Token 无效，跳转到登录页
             console.log('❌ Token无效，跳转到登录页');
             localStorage.removeItem('authToken');
+            localStorage.removeItem('subscriptionCache');
             window.location.href = 'auth.html';
             return;
         }
@@ -1431,32 +1475,69 @@ async function checkSubscriptionAndShowPanel() {
         
         console.log('✅ 有效订阅:', hasValidSubscription);
         
-        // 先隐藏所有面板
-        const allPanels = document.querySelectorAll('.panel');
-        allPanels.forEach(panel => {
-            panel.style.display = 'none';
-        });
+        // 缓存订阅状态
+        localStorage.setItem('subscriptionCache', JSON.stringify({
+            hasValidSubscription,
+            timestamp: Date.now()
+        }));
         
-        if (hasValidSubscription) {
-            // 有有效订阅，显示模式选择面板
-            console.log('→ 显示模式选择面板');
-            const modePanel = document.getElementById('modeSelectionPanel');
-            if (modePanel) {
-                modePanel.style.display = 'block';
-            }
-        } else {
-            // 没有有效订阅，显示订阅面板
-            console.log('→ 显示订阅面板');
-            const apiPanel = document.getElementById('apiKeyPanel');
-            if (apiPanel) {
-                apiPanel.style.display = 'block';
-            }
-        }
+        showPanelBySubscription(hasValidSubscription);
+        
     } catch (error) {
         console.error('❌ 检查订阅状态失败:', error);
         // 出错时默认显示订阅面板
-        document.getElementById('apiKeyPanel').style.display = 'block';
-        document.getElementById('modeSelectionPanel').style.display = 'none';
+        showPanelBySubscription(false);
+    }
+}
+
+// 根据订阅状态显示面板
+function showPanelBySubscription(hasValidSubscription) {
+    // 先隐藏所有面板
+    const allPanels = document.querySelectorAll('.panel');
+    allPanels.forEach(panel => {
+        panel.style.display = 'none';
+    });
+    
+    if (hasValidSubscription) {
+        // 有有效订阅，显示模式选择面板
+        console.log('→ 显示模式选择面板');
+        const modePanel = document.getElementById('modeSelectionPanel');
+        if (modePanel) {
+            modePanel.style.display = 'block';
+        }
+    } else {
+        // 没有有效订阅，显示订阅面板
+        console.log('→ 显示订阅面板');
+        const apiPanel = document.getElementById('apiKeyPanel');
+        if (apiPanel) {
+            apiPanel.style.display = 'block';
+        }
+    }
+}
+
+// 后台验证订阅状态
+async function verifySubscriptionInBackground(token) {
+    try {
+        const response = await fetch('http://localhost:3001/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const hasValidSubscription = data.subscription && new Date(data.subscription.endDate) > new Date();
+            
+            // 更新缓存
+            localStorage.setItem('subscriptionCache', JSON.stringify({
+                hasValidSubscription,
+                timestamp: Date.now()
+            }));
+            
+            console.log('🔄 后台验证完成，订阅状态:', hasValidSubscription);
+        }
+    } catch (error) {
+        console.error('后台验证失败:', error);
     }
 }
 </script>
