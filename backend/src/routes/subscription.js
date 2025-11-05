@@ -7,8 +7,8 @@ require('dotenv').config();
 const USE_SQLITE = process.env.USE_SQLITE === 'true' || process.versions.electron;
 const Subscription = USE_SQLITE ? require('../models/Subscription-sqlite') : require('../models/Subscription');
 const { authenticateToken } = require('../middleware/auth');
-const { pool } = require('../config/database');
-const { db } = require('../config/database');
+const { pool } = USE_SQLITE ? {} : require('../config/database');
+const { db } = USE_SQLITE ? require('../config/database-sqlite') : {};
 const XunhuPay = require('../utils/xunhupay');
 
 // 初始化虎皮椒支付
@@ -203,8 +203,14 @@ router.post('/create-order', authenticateToken, async (req, res) => {
         }
 
     } catch (error) {
-        console.error('创建订单错误:', error);
-        res.status(500).json({ error: '创建订单失败' });
+        console.error('❌ 创建订单错误:', error);
+        console.error('错误堆栈:', error.stack);
+        console.error('错误详情:', {
+            message: error.message,
+            code: error.code,
+            errno: error.errno
+        });
+        res.status(500).json({ error: '创建订单失败: ' + error.message });
     }
 });
 
