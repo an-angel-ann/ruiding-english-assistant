@@ -414,20 +414,22 @@ app.whenReady().then(async () => {
         // 创建菜单
         log('创建菜单...');
         createMenu();
+        log('菜单创建完成');
         
         // 启动后端服务器
         log('启动后端服务器...');
         await startBackendServer();
-        log('后端服务器启动成功');
+        log('✅ 后端服务器启动成功，继续启动前端...');
         
         // 启动前端服务器
         log('启动前端服务器...');
         await startFrontendServer();
-        log('前端服务器启动成功');
+        log('✅ 前端服务器启动成功，继续创建窗口...');
         
         // 创建窗口
         log('创建主窗口...');
-        createWindow();
+        await createWindow();
+        log('✅ 主窗口创建成功');
 
         app.on('activate', () => {
             log('应用被激活');
@@ -436,9 +438,9 @@ app.whenReady().then(async () => {
             }
         });
         
-        log('应用初始化完成');
+        log('🎉 应用初始化完成');
     } catch (error) {
-        log(`应用启动失败: ${error.message}`);
+        log(`❌ 应用启动失败: ${error.message}`);
         log(error.stack);
         dialog.showErrorBoxSync('启动失败', `应用启动失败:\n\n${error.message}\n\n日志文件: ${logFile}`);
         app.quit();
