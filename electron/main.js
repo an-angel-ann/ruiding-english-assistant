@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
@@ -99,10 +99,20 @@ async function testSmtpConfig(config) {
             // 动态加载nodemailer - 需要从backend的node_modules加载
             let nodemailer;
             try {
-                // 确定backend路径
-                const backendPath = app.isPackaged 
-                    ? path.join(process.resourcesPath, 'backend')
-                    : path.join(__dirname, '../backend');
+                // 确定backend路径 - 打包后需要从app.asar.unpacked加载native模块
+                let backendPath;
+                if (app.isPackaged) {
+                    // 尝试从unpacked目录加载（用于native模块）
+                    const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'backend');
+                    const regularPath = path.join(process.resourcesPath, 'backend');
+                    
+                    // 优先使用unpacked路径
+                    backendPath = fs.existsSync(unpackedPath) ? unpackedPath : regularPath;
+                    log(`打包模式 - Unpacked路径: ${unpackedPath}, 存在: ${fs.existsSync(unpackedPath)}`);
+                    log(`打包模式 - Regular路径: ${regularPath}, 存在: ${fs.existsSync(regularPath)}`);
+                } else {
+                    backendPath = path.join(__dirname, '../backend');
+                }
                 
                 log(`Backend路径: ${backendPath}`);
                 log(`Backend路径是否存在: ${fs.existsSync(backendPath)}`);
@@ -135,6 +145,7 @@ async function testSmtpConfig(config) {
                     const originalCwd = process.cwd();
                     try {
                         process.chdir(backendPath);
+                        log(`切换工作目录到: ${backendPath}`);
                         nodemailer = require('nodemailer');
                         log('✅ 通过切换工作目录成功加载nodemailer');
                         loaded = true;

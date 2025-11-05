@@ -41,6 +41,7 @@
     ],
     "asarUnpack": [
       "frontend/**/*",
+      "backend/**/*",
       "**/*.node"
     ],
     "extraResources": [
