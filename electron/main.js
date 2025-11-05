@@ -27,6 +27,7 @@ log(`日志文件: ${logFile}`);
 
 const store = new Store();
 let mainWindow;
+let splashWindow;
 let smtpSetupWindow;
 let backendProcess;
 let frontendServer;
@@ -61,6 +62,38 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
     log(`未处理的Promise拒绝: ${reason}`);
 });
+
+// 创建启动画面窗口
+function createSplashWindow() {
+    log('创建启动画面');
+    splashWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        resizable: false,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+
+    splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+
+    splashWindow.on('closed', () => {
+        splashWindow = null;
+    });
+}
+
+// 关闭启动画面
+function closeSplashWindow() {
+    if (splashWindow) {
+        log('关闭启动画面');
+        splashWindow.close();
+        splashWindow = null;
+    }
+}
 
 // 创建SMTP配置窗口
 function createSmtpSetupWindow() {
@@ -621,6 +654,12 @@ ipcMain.on('open-smtp-setup', () => {
     }
 });
 
+// 启动画面播放完成
+ipcMain.on('splash-finished', () => {
+    log('启动画面播放完成');
+    closeSplashWindow();
+});
+
 // 启动应用主流程
 async function startApplication() {
     log('开始启动应用主流程...');
@@ -658,7 +697,10 @@ async function startApplication() {
 app.whenReady().then(async () => {
     log('应用准备就绪，开始初始化...');
     
-    // 直接启动应用，不强制配置SMTP
+    // 先显示启动画面
+    createSplashWindow();
+    
+    // 在后台启动应用
     await startApplication();
 
     app.on('activate', () => {
