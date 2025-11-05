@@ -1,8 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
-const Store = require('electron-store');
 const fs = require('fs');
+const Store = require('electron-store');
 const os = require('os');
 
 // 设置日志文件
@@ -82,6 +81,8 @@ function createSmtpSetupWindow() {
 
     smtpSetupWindow.once('ready-to-show', () => {
         smtpSetupWindow.show();
+        // 默认打开开发者工具以便调试
+        smtpSetupWindow.webContents.openDevTools();
     });
 
     smtpSetupWindow.loadFile(path.join(__dirname, 'smtp-setup.html'));
@@ -234,6 +235,8 @@ function createWindow() {
     // 窗口准备好后显示
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        // 默认打开开发者工具以便调试
+        mainWindow.webContents.openDevTools();
     });
 
     // 加载应用

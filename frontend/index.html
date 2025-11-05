@@ -636,17 +636,22 @@ let allVoices = [];
 
 // 初始化语音
 function initVoices() {
+    console.log('🎤 开始初始化语音系统...');
     return new Promise((resolve) => {
         let voices = speechSynthesis.getVoices();
+        console.log('🎤 首次获取语音数量:', voices.length);
         
         if (voices.length > 0) {
+            console.log('✅ 语音已加载，立即填充选择器');
             allVoices = voices;
             selectBestVoice(voices);
             populateVoiceSelector(voices);
             resolve(voices);
         } else {
+            console.log('⏳ 语音未加载，等待onvoiceschanged事件...');
             speechSynthesis.onvoiceschanged = () => {
                 voices = speechSynthesis.getVoices();
+                console.log('✅ onvoiceschanged触发，获取到', voices.length, '个语音');
                 allVoices = voices;
                 selectBestVoice(voices);
                 populateVoiceSelector(voices);
@@ -658,9 +663,15 @@ function initVoices() {
 
 // 填充语音选择器
 function populateVoiceSelector(voices) {
+    console.log('📝 populateVoiceSelector被调用，voices数量:', voices.length);
     const voiceSelect = document.getElementById('voiceSelect');
+    console.log('📝 voiceSelect元素:', voiceSelect);
+    
     if (!voiceSelect) {
         console.warn('⚠️ voiceSelect元素未找到，稍后重试...');
+        console.log('📝 当前DOM状态:', document.readyState);
+        console.log('📝 body是否存在:', !!document.body);
+        
         // 如果元素还没加载，等待一下再试
         setTimeout(() => {
             const retrySelect = document.getElementById('voiceSelect');
@@ -669,14 +680,17 @@ function populateVoiceSelector(voices) {
                 populateVoiceSelector(voices);
             } else {
                 console.error('❌ voiceSelect元素始终未找到');
+                console.log('📝 所有select元素:', document.querySelectorAll('select'));
             }
         }, 500);
         return;
     }
     
     console.log('🎤 开始填充语音选择器，共', voices.length, '个语音');
+    console.log('📝 voiceSelect当前innerHTML长度:', voiceSelect.innerHTML.length);
     
     voiceSelect.innerHTML = '';
+    console.log('📝 已清空voiceSelect');
     
     // 分类语音
     const categories = {
