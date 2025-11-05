@@ -1267,9 +1267,17 @@ window.addEventListener('click', function(event) {
     }
 })();
 
-// 处理启动动画
+// 处理启动动画（只执行一次）
 if (window.electron && window.electron.ipcRenderer) {
+    let splashHandled = false;
+    
     window.electron.ipcRenderer.on('show-splash', (event, videoPath) => {
+        if (splashHandled) {
+            console.log('启动动画已显示过，跳过');
+            return;
+        }
+        splashHandled = true;
+        
         console.log('收到启动动画请求，视频路径:', videoPath);
         const splashOverlay = document.getElementById('splash-overlay');
         const splashVideo = document.getElementById('splash-video');
@@ -1278,21 +1286,33 @@ if (window.electron && window.electron.ipcRenderer) {
             splashVideo.src = videoPath;
             splashOverlay.style.display = 'flex';
             
+            // 视频加载完成后播放
+            splashVideo.addEventListener('loadeddata', () => {
+                console.log('视频加载完成，开始播放');
+                splashVideo.play().catch(err => {
+                    console.error('视频播放失败:', err);
+                    splashOverlay.style.display = 'none';
+                });
+            }, { once: true });
+            
             // 视频播放结束后隐藏覆盖层
             splashVideo.addEventListener('ended', () => {
                 console.log('启动动画播放完成');
                 splashOverlay.style.display = 'none';
-            });
+            }, { once: true });
             
             // 视频加载失败时也隐藏
             splashVideo.addEventListener('error', (err) => {
                 console.error('启动动画加载失败:', err);
                 splashOverlay.style.display = 'none';
-            });
+            }, { once: true });
             
             // 最长显示10秒
             setTimeout(() => {
-                splashOverlay.style.display = 'none';
+                if (splashOverlay.style.display !== 'none') {
+                    console.log('启动动画超时，强制关闭');
+                    splashOverlay.style.display = 'none';
+                }
             }, 10000);
         }
     });

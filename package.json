@@ -45,6 +45,7 @@
     "asarUnpack": [
       "frontend/**/*",
       "backend/**/*",
+      "backend/node_modules/**/*",
       "welcomeflash.mp4",
       "**/*.node"
     ],

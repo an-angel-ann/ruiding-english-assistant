@@ -31,6 +31,7 @@ let splashWindow;
 let smtpSetupWindow;
 let backendProcess;
 let frontendServer;
+let splashShown = false; // 标记启动动画是否已显示
 
 // 单实例锁 - 防止多个实例同时运行
 const gotTheLock = app.requestSingleInstanceLock();
@@ -324,25 +325,30 @@ function createWindow() {
     // 加载应用
     mainWindow.loadURL('http://localhost:8080');
     
-    // 页面加载完成后发送视频路径以显示启动动画
+    // 页面加载完成后发送视频路径以显示启动动画（仅首次）
     mainWindow.webContents.on('did-finish-load', () => {
-        // 确定视频文件路径
-        let videoPath;
-        if (app.isPackaged) {
-            videoPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'welcomeflash.mp4');
-        } else {
-            videoPath = path.join(__dirname, '..', 'welcomeflash.mp4');
+        // 只在应用首次启动时显示动画
+        if (!splashShown) {
+            splashShown = true;
+            
+            // 确定视频文件路径
+            let videoPath;
+            if (app.isPackaged) {
+                videoPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'welcomeflash.mp4');
+            } else {
+                videoPath = path.join(__dirname, '..', 'welcomeflash.mp4');
+            }
+            
+            log(`视频文件路径: ${videoPath}`);
+            log(`视频文件是否存在: ${fs.existsSync(videoPath)}`);
+            
+            // 使用自定义协议 URL
+            const videoUrl = `local-video://${encodeURIComponent(videoPath)}`;
+            log(`视频 URL: ${videoUrl}`);
+            
+            // 发送视频 URL 给渲染进程
+            mainWindow.webContents.send('show-splash', videoUrl);
         }
-        
-        log(`视频文件路径: ${videoPath}`);
-        log(`视频文件是否存在: ${fs.existsSync(videoPath)}`);
-        
-        // 使用自定义协议 URL
-        const videoUrl = `local-video://${encodeURIComponent(videoPath)}`;
-        log(`视频 URL: ${videoUrl}`);
-        
-        // 发送视频 URL 给渲染进程
-        mainWindow.webContents.send('show-splash', videoUrl);
     });
 
     // 开发模式下打开开发者工具
