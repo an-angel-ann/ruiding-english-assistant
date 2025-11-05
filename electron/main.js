@@ -211,30 +211,40 @@ function startBackendServer() {
             const originalCwd = process.cwd();
             try {
                 process.chdir(backendPath);
-                console.log('工作目录已切换到:', process.cwd());
+                log(`工作目录已切换到: ${process.cwd()}`);
             } catch (chdirError) {
-                console.error('切换目录失败:', chdirError);
-                dialog.showErrorBox('启动失败', `切换目录失败:\n${chdirError.message}`);
+                log(`切换目录失败: ${chdirError.message}`);
+                dialog.showErrorBoxSync('启动失败', `切换目录失败:\n${chdirError.message}\n\n日志文件: ${logFile}`);
                 reject(chdirError);
                 return;
             }
             
             // 直接require服务器脚本
-            console.log('正在加载服务器脚本...');
-            require(serverScript);
+            log('正在加载服务器脚本...');
+            try {
+                require(serverScript);
+                log('服务器脚本加载成功');
+            } catch (requireError) {
+                log(`服务器脚本加载失败: ${requireError.message}`);
+                log(requireError.stack);
+                dialog.showErrorBoxSync('启动失败', `服务器脚本加载失败:\n${requireError.message}\n\n日志文件: ${logFile}`);
+                reject(requireError);
+                return;
+            }
             
             // 恢复工作目录
             process.chdir(originalCwd);
             
-            console.log('后端服务器已启动');
+            log('后端服务器已启动');
             
             // 等待服务器完全启动
             setTimeout(() => {
                 resolve();
             }, 2000);
         } catch (error) {
-            console.error('后端启动失败:', error);
-            dialog.showErrorBox('启动失败', `后端服务器启动失败:\n${error.message}\n\n${error.stack}`);
+            log(`后端启动失败: ${error.message}`);
+            log(error.stack);
+            dialog.showErrorBoxSync('启动失败', `后端服务器启动失败:\n${error.message}\n\n日志文件: ${logFile}`);
             reject(error);
         }
     });
@@ -266,8 +276,8 @@ function startFrontendServer() {
         const fs = require('fs');
         const pathModule = require('path');
 
-        console.log('前端路径:', frontendPath);
-        console.log('前端目录是否存在:', fs.existsSync(frontendPath));
+        log(`前端路径: ${frontendPath}`);
+        log(`前端目录是否存在: ${fs.existsSync(frontendPath)}`);
 
         const server = http.createServer((req, res) => {
             // 处理URL参数
@@ -309,22 +319,23 @@ function startFrontendServer() {
         });
 
         server.listen(8080, '127.0.0.1', () => {
-            console.log('前端服务器已启动: http://localhost:8080');
+            log('前端服务器已启动: http://localhost:8080');
             frontendServer = server;
             resolve();
         });
 
         server.on('error', (error) => {
             if (error.code === 'EADDRINUSE') {
-                console.log('端口8080已被占用，尝试使用其他端口...');
+                log('端口8080已被占用，尝试使用其他端口...');
                 server.listen(0, '127.0.0.1', () => {
                     const port = server.address().port;
-                    console.log(`前端服务器已启动: http://localhost:${port}`);
+                    log(`前端服务器已启动: http://localhost:${port}`);
                     frontendServer = server;
                     resolve();
                 });
             } else {
-                console.error('前端服务器启动失败:', error);
+                log(`前端服务器启动失败: ${error.message}`);
+                log(error.stack);
                 reject(error);
             }
         });
