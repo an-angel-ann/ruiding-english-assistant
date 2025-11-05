@@ -763,15 +763,25 @@ app.whenReady().then(async () => {
     log('应用准备就绪，开始初始化...');
     
     // 注册自定义协议用于加载本地视频
-    protocol.registerFileProtocol('local-video', (request, callback) => {
-        const url = request.url.replace('local-video://', '');
-        try {
-            return callback(decodeURIComponent(url));
-        } catch (error) {
-            log(`加载视频失败: ${error.message}`);
-            return callback({ error: -2 });
-        }
-    });
+    try {
+        protocol.registerFileProtocol('local-video', (request, callback) => {
+            const url = request.url.replace('local-video://', '');
+            try {
+                const decodedPath = decodeURIComponent(url);
+                log(`[协议] 请求视频: ${decodedPath}`);
+                log(`[协议] 文件是否存在: ${fs.existsSync(decodedPath)}`);
+                
+                // 返回文件路径
+                callback({ path: decodedPath });
+            } catch (error) {
+                log(`[协议] 解码路径失败: ${error.message}`);
+                callback({ error: -2 });
+            }
+        });
+        log('✅ local-video 协议注册成功');
+    } catch (error) {
+        log(`❌ 协议注册失败: ${error.message}`);
+    }
     
     // 直接启动应用（启动画面将在主窗口内显示）
     await startApplication();

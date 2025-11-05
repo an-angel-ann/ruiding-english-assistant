@@ -118,7 +118,7 @@
 <body>
     <!-- 启动动画覆盖层 -->
     <div id="splash-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; justify-content: center; align-items: center;">
-        <video id="splash-video" style="width: 100%; height: 100%; object-fit: contain;" muted autoplay></video>
+        <video id="splash-video" style="width: 100%; height: 100%; object-fit: contain;" autoplay playsinline></video>
     </div>
     
     <div class="container">
@@ -1278,42 +1278,74 @@ if (window.electron && window.electron.ipcRenderer) {
         }
         splashHandled = true;
         
-        console.log('收到启动动画请求，视频路径:', videoPath);
+        console.log('🎬 收到启动动画请求');
+        console.log('📹 视频路径:', videoPath);
+        
         const splashOverlay = document.getElementById('splash-overlay');
         const splashVideo = document.getElementById('splash-video');
         
         if (splashOverlay && splashVideo) {
+            // 设置视频源
             splashVideo.src = videoPath;
-            splashOverlay.style.display = 'flex';
+            console.log('✅ 视频源已设置');
             
-            // 视频加载完成后播放
-            splashVideo.addEventListener('loadeddata', () => {
-                console.log('视频加载完成，开始播放');
-                splashVideo.play().catch(err => {
-                    console.error('视频播放失败:', err);
-                    splashOverlay.style.display = 'none';
-                });
+            // 显示覆盖层
+            splashOverlay.style.display = 'flex';
+            console.log('✅ 覆盖层已显示');
+            
+            // 监听各种视频事件
+            splashVideo.addEventListener('loadstart', () => {
+                console.log('📥 视频开始加载...');
             }, { once: true });
             
-            // 视频播放结束后隐藏覆盖层
+            splashVideo.addEventListener('loadedmetadata', () => {
+                console.log('📊 视频元数据已加载');
+                console.log(`   时长: ${splashVideo.duration}秒`);
+                console.log(`   尺寸: ${splashVideo.videoWidth}x${splashVideo.videoHeight}`);
+            }, { once: true });
+            
+            splashVideo.addEventListener('loadeddata', () => {
+                console.log('✅ 视频数据已加载');
+                console.log('🎮 尝试播放视频...');
+                
+                splashVideo.play()
+                    .then(() => {
+                        console.log('✅ 视频播放成功！');
+                    })
+                    .catch(err => {
+                        console.error('❌ 视频播放失败:', err);
+                        console.error('   错误名称:', err.name);
+                        console.error('   错误消息:', err.message);
+                        splashOverlay.style.display = 'none';
+                    });
+            }, { once: true });
+            
+            splashVideo.addEventListener('playing', () => {
+                console.log('▶️ 视频正在播放');
+            }, { once: true });
+            
             splashVideo.addEventListener('ended', () => {
-                console.log('启动动画播放完成');
+                console.log('✅ 启动动画播放完成');
                 splashOverlay.style.display = 'none';
             }, { once: true });
             
-            // 视频加载失败时也隐藏
-            splashVideo.addEventListener('error', (err) => {
-                console.error('启动动画加载失败:', err);
+            splashVideo.addEventListener('error', (e) => {
+                console.error('❌ 视频加载错误');
+                console.error('   错误代码:', splashVideo.error?.code);
+                console.error('   错误消息:', splashVideo.error?.message);
+                console.error('   事件:', e);
                 splashOverlay.style.display = 'none';
             }, { once: true });
             
             // 最长显示10秒
             setTimeout(() => {
                 if (splashOverlay.style.display !== 'none') {
-                    console.log('启动动画超时，强制关闭');
+                    console.log('⏱️ 启动动画超时，强制关闭');
                     splashOverlay.style.display = 'none';
                 }
             }, 10000);
+        } else {
+            console.error('❌ 找不到启动动画元素');
         }
     });
 }
