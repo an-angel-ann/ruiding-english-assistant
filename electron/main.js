@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
@@ -168,6 +168,26 @@ async function testSmtpConfig(config) {
                 log(`Backend路径: ${backendPath}`);
                 log(`Backend路径是否存在: ${fs.existsSync(backendPath)}`);
                 
+                // 检查 node_modules 目录
+                const nodeModulesPath = path.join(backendPath, 'node_modules');
+                log(`node_modules路径: ${nodeModulesPath}`);
+                log(`node_modules是否存在: ${fs.existsSync(nodeModulesPath)}`);
+                
+                if (fs.existsSync(nodeModulesPath)) {
+                    try {
+                        const modules = fs.readdirSync(nodeModulesPath);
+                        log(`node_modules中的模块数量: ${modules.length}`);
+                        log(`是否包含nodemailer: ${modules.includes('nodemailer')}`);
+                        if (modules.includes('nodemailer')) {
+                            const nodemailerDir = path.join(nodeModulesPath, 'nodemailer');
+                            const nodemailerFiles = fs.readdirSync(nodemailerDir);
+                            log(`nodemailer目录内容: ${nodemailerFiles.join(', ')}`);
+                        }
+                    } catch (e) {
+                        log(`读取node_modules失败: ${e.message}`);
+                    }
+                }
+                
                 // 尝试多种方式加载nodemailer
                 const nodemailerPaths = [
                     path.join(backendPath, 'node_modules', 'nodemailer'),
@@ -317,8 +337,12 @@ function createWindow() {
         log(`视频文件路径: ${videoPath}`);
         log(`视频文件是否存在: ${fs.existsSync(videoPath)}`);
         
-        // 发送视频路径给渲染进程
-        mainWindow.webContents.send('show-splash', videoPath);
+        // 使用自定义协议 URL
+        const videoUrl = `local-video://${encodeURIComponent(videoPath)}`;
+        log(`视频 URL: ${videoUrl}`);
+        
+        // 发送视频 URL 给渲染进程
+        mainWindow.webContents.send('show-splash', videoUrl);
     });
 
     // 开发模式下打开开发者工具
@@ -731,6 +755,17 @@ async function startApplication() {
 // 应用准备就绪
 app.whenReady().then(async () => {
     log('应用准备就绪，开始初始化...');
+    
+    // 注册自定义协议用于加载本地视频
+    protocol.registerFileProtocol('local-video', (request, callback) => {
+        const url = request.url.replace('local-video://', '');
+        try {
+            return callback(decodeURIComponent(url));
+        } catch (error) {
+            log(`加载视频失败: ${error.message}`);
+            return callback({ error: -2 });
+        }
+    });
     
     // 直接启动应用（启动画面将在主窗口内显示）
     await startApplication();

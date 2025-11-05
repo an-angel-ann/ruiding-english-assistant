@@ -126,21 +126,29 @@
         <div id="voiceSelector" class="voice-selector" style="display: none;">
             <div class="voice-selector-icon" onclick="toggleVoicePanel()">🔊</div>
             <div class="voice-selector-content" id="voiceSelectorContent">
-                <h4 style="margin: 0 0 12px 0; color: #667eea; font-size: 14px;">选择发音</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="margin: 0; color: #667eea; font-size: 14px;">选择发音</h4>
+                    <button onclick="toggleVoiceHelp()" style="padding: 4px 8px; background: #ffc107; color: #856404; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold;">❓ 帮助</button>
+                </div>
+                
                 <select id="voiceSelect" onchange="changeVoice()" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; margin-bottom: 10px;">
                     <option value="">加载中...</option>
                 </select>
                 
-                <!-- 语音包安装提示 -->
-                <div id="voicePackHint" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 12px; line-height: 1.6;">
-                    <div style="font-weight: bold; color: #856404; margin-bottom: 6px;">⚠️ 未检测到英语语音包</div>
+                <!-- 语音包安装提示 - 默认隐藏，点击帮助按钮显示 -->
+                <div id="voicePackHint" style="display: none; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 12px; line-height: 1.6;">
+                    <div style="font-weight: bold; color: #856404; margin-bottom: 8px; font-size: 13px;">⚠️ 如何安装英语语音包</div>
                     <div style="color: #856404;">
-                        <strong>安装步骤：</strong><br>
-                        1. 打开 <strong>Windows 设置</strong><br>
+                        <strong>Windows 系统：</strong><br>
+                        1. 按 <kbd>Win + I</kbd> 打开 <strong>Windows 设置</strong><br>
                         2. 进入 <strong>时间和语言 → 语音</strong><br>
                         3. 点击 <strong>"添加语音"</strong><br>
                         4. 选择 <strong>英语（美国）</strong> 或 <strong>英语（英国）</strong><br>
-                        5. 下载并安装后 <strong>重启应用</strong>
+                        5. 等待下载完成后 <strong>重启应用</strong><br><br>
+                        <strong>Mac 系统：</strong><br>
+                        1. 打开 <strong>系统偏好设置 → 辅助功能 → 语音内容</strong><br>
+                        2. 点击 <strong>"系统语音"</strong> 下拉菜单<br>
+                        3. 选择 <strong>"自定"</strong> 并下载英语语音
                     </div>
                 </div>
                 
@@ -855,7 +863,7 @@ function populateVoiceSelector(voices) {
         option.selected = true;
         voiceSelect.appendChild(option);
         
-        // 显示安装提示
+        // 自动显示安装提示（没有英语语音时）
         const voicePackHint = document.getElementById('voicePackHint');
         if (voicePackHint) {
             voicePackHint.style.display = 'block';
@@ -937,6 +945,14 @@ function closeVoicePanel() {
     const content = document.getElementById('voiceSelectorContent');
     if (content) {
         content.classList.remove('active');
+    }
+}
+
+// 切换语音帮助提示
+function toggleVoiceHelp() {
+    const hint = document.getElementById('voicePackHint');
+    if (hint) {
+        hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
     }
 }
 
