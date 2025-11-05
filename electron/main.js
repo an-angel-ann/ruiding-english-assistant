@@ -663,7 +663,7 @@ function createMenu() {
                 {
                     label: '联系我们',
                     click: async () => {
-                        await shell.openExternal('mailto:o_oangela@163.com');
+                        await shell.openExternal('mailto:ruiding_support@163.com');
                     }
                 },
                 { type: 'separator' },

@@ -9,7 +9,7 @@ try {
     console.log('🔍 检查管理员账号状态...\n');
     
     const admin = db.prepare('SELECT id, email, username, role, status, created_at FROM users WHERE email = ?')
-        .get('o_oangela@126.com');
+        .get('ruiding_support@163.com');
     
     if (admin) {
         console.log('✅ 找到管理员账号:');
@@ -24,11 +24,11 @@ try {
         if (admin.role !== 'admin') {
             console.log('⚠️  角色不是admin，正在修复...');
             db.prepare('UPDATE users SET role = ? WHERE email = ?')
-                .run('admin', 'o_oangela@126.com');
+                .run('admin', 'ruiding_support@163.com');
             console.log('✅ 已将角色设置为admin');
         }
     } else {
-        console.log('❌ 未找到管理员账号: o_oangela@126.com');
+        console.log('❌ 未找到管理员账号: ruiding_support@163.com');
     }
     
     console.log('\n📊 所有用户列表:');

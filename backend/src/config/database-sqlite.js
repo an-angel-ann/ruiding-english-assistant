@@ -207,7 +207,7 @@ async function testConnection() {
 // 初始化管理员账号
 async function initializeAdmin() {
     const bcrypt = require('bcryptjs');
-    const adminEmail = 'o_oangela@126.com';
+    const adminEmail = 'ruiding_support@163.com';
     const adminPassword = 'abcd56789';
     
     try {

@@ -1,7 +1,7 @@
 {
   "name": "ruiding-english-assistant",
   "productName": "睿叮AI英语学习助手",
-  "version": "3.3.4",
+  "version": "3.5.0",
   "description": "基于AI的智能英语学习助手",
   "main": "electron/main.js",
   "scripts": {
@@ -101,7 +101,7 @@
       "x64ArchFiles": "**/node_modules/{bcrypt,better-sqlite3,fsevents}/**/*"
     },
     "dmg": {
-      "title": "睿叮AI英语学习助手 v3.3.4",
+      "title": "睿叮AI英语学习助手 v3.5.0",
       "icon": "build/icon.icns",
       "iconSize": 100,
       "contents": [
@@ -178,7 +178,7 @@
   },
   "author": {
     "name": "Ruiding",
-    "email": "o_oangela@126.com"
+    "email": "ruiding_support@163.com"
   },
   "license": "Proprietary",
   "homepage": "https://ruiding.online"

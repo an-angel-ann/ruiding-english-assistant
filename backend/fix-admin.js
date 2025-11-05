@@ -7,7 +7,7 @@ const dbPath = path.join(__dirname, 'data/ruiding.db');
 const db = new Database(dbPath);
 
 async function fixAdmin() {
-    const adminEmail = 'o_oangela@126.com';
+    const adminEmail = 'ruiding_support@163.com';
     const adminPassword = 'abcd56789';
     
     try {

@@ -29,9 +29,9 @@
    打开 `smtp-config.json`，填入授权码：
    ```json
    {
-     "host": "smtp.126.com",
+     "host": "smtp.163.com",
      "port": 465,
-     "user": "o_oangela@126.com",
+     "user": "ruiding_support@163.com",
      "pass": "你的授权码"
    }
    ```
@@ -100,4 +100,4 @@ npm run build:mac
 
 ## 技术支持
 
-如有问题，请联系：o_oangela@126.com
+如有问题，请联系：ruiding_support@163.com

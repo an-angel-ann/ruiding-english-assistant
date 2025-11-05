@@ -55,7 +55,7 @@ class EmailService {
                 // SMTP未配置或授权码为空
                 console.error('❌ SMTP邮件服务未配置');
                 console.error('请按以下步骤配置：');
-                console.error('1. 登录126邮箱 (o_oangela@126.com)');
+                console.error('1. 登录163邮箱 (ruiding_support@163.com)');
                 console.error('2. 进入"设置" -> "POP3/SMTP/IMAP"');
                 console.error('3. 开启"SMTP服务"');
                 console.error('4. 生成授权码');

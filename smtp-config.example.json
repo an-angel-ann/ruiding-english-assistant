@@ -1,11 +1,11 @@
 {
-  "host": "smtp.126.com",
+  "host": "smtp.163.com",
   "port": 465,
-  "user": "o_oangela@126.com",
+  "user": "ruiding_support@163.com",
   "pass": "YOUR_SMTP_AUTH_CODE_HERE",
   "instructions": [
     "1. 复制此文件并重命名为 smtp-config.json",
-    "2. 登录126邮箱 (o_oangela@126.com)",
+    "2. 登录163邮箱 (ruiding_support@163.com)",
     "3. 进入 设置 -> POP3/SMTP/IMAP",
     "4. 开启 SMTP服务",
     "5. 生成授权码（不是邮箱密码）",

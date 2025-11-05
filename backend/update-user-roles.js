@@ -15,7 +15,7 @@ try {
     
     if (usersWithoutRole.length > 0) {
         // 更新所有非管理员用户的role为'user'
-        const result = db.prepare("UPDATE users SET role = 'user' WHERE (role IS NULL OR role = '') AND email != ?").run('o_oangela@126.com');
+        const result = db.prepare("UPDATE users SET role = 'user' WHERE (role IS NULL OR role = '') AND email != ?").run('ruiding_support@163.com');
         console.log(`✅ 已更新 ${result.changes} 个用户的role为'user'\n`);
     }
     
