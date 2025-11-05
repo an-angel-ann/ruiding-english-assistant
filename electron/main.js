@@ -56,7 +56,7 @@ app.disableHardwareAcceleration();
 process.on('uncaughtException', (error) => {
     log(`未捕获的异常: ${error.message}`);
     log(error.stack);
-    dialog.showErrorBoxSync('应用错误', `发生未处理的错误:\n\n${error.message}\n\n日志文件: ${logFile}`);
+    dialog.showErrorBox('应用错误', `发生未处理的错误:\n\n${error.message}\n\n日志文件: ${logFile}`);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -317,7 +317,7 @@ function createWindow() {
     } catch (error) {
         log(`创建主窗口失败: ${error.message}`);
         log(error.stack);
-        dialog.showErrorBoxSync('窗口创建失败', `无法创建应用窗口:\n\n${error.message}\n\n日志文件: ${logFile}`);
+        dialog.showErrorBox('窗口创建失败', `无法创建应用窗口:\n\n${error.message}\n\n日志文件: ${logFile}`);
         app.quit();
     }
 }
@@ -361,7 +361,7 @@ function startBackendServer() {
         if (!fs.existsSync(backendPath)) {
             const error = new Error(`后端目录不存在: ${backendPath}`);
             log(`错误: ${error.message}`);
-            dialog.showErrorBoxSync('启动失败', `后端目录不存在:\n${backendPath}\n\n日志文件: ${logFile}`);
+            dialog.showErrorBox('启动失败', `后端目录不存在:\n${backendPath}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
@@ -369,7 +369,7 @@ function startBackendServer() {
         if (!fs.existsSync(serverScript)) {
             const error = new Error(`服务器脚本不存在: ${serverScript}`);
             log(`错误: ${error.message}`);
-            dialog.showErrorBoxSync('启动失败', `服务器脚本不存在:\n${serverScript}\n\n日志文件: ${logFile}`);
+            dialog.showErrorBox('启动失败', `服务器脚本不存在:\n${serverScript}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
@@ -379,7 +379,7 @@ function startBackendServer() {
         if (!fs.existsSync(nodeModulesPath)) {
             const error = new Error(`后端依赖缺失: ${nodeModulesPath}`);
             log(`错误: ${error.message}`);
-            dialog.showErrorBoxSync('启动失败', `后端依赖缺失:\n${nodeModulesPath}\n\n日志文件: ${logFile}`);
+            dialog.showErrorBox('启动失败', `后端依赖缺失:\n${nodeModulesPath}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
@@ -391,7 +391,7 @@ function startBackendServer() {
         if (!fs.existsSync(sqlitePath)) {
             const error = new Error(`better-sqlite3.node不存在: ${sqlitePath}`);
             log(`错误: ${error.message}`);
-            dialog.showErrorBoxSync('启动失败', `数据库模块缺失:\n${sqlitePath}\n\n日志文件: ${logFile}`);
+            dialog.showErrorBox('启动失败', `数据库模块缺失:\n${sqlitePath}\n\n日志文件: ${logFile}`);
             reject(error);
             return;
         }
@@ -425,7 +425,7 @@ function startBackendServer() {
                 log(`工作目录已切换到: ${process.cwd()}`);
             } catch (chdirError) {
                 log(`切换目录失败: ${chdirError.message}`);
-                dialog.showErrorBoxSync('启动失败', `切换目录失败:\n${chdirError.message}\n\n日志文件: ${logFile}`);
+                dialog.showErrorBox('启动失败', `切换目录失败:\n${chdirError.message}\n\n日志文件: ${logFile}`);
                 reject(chdirError);
                 return;
             }
@@ -438,7 +438,7 @@ function startBackendServer() {
             } catch (requireError) {
                 log(`服务器脚本加载失败: ${requireError.message}`);
                 log(requireError.stack);
-                dialog.showErrorBoxSync('启动失败', `服务器脚本加载失败:\n${requireError.message}\n\n日志文件: ${logFile}`);
+                dialog.showErrorBox('启动失败', `服务器脚本加载失败:\n${requireError.message}\n\n日志文件: ${logFile}`);
                 reject(requireError);
                 return;
             }
@@ -456,7 +456,7 @@ function startBackendServer() {
         } catch (error) {
             log(`后端启动失败: ${error.message}`);
             log(error.stack);
-            dialog.showErrorBoxSync('启动失败', `后端服务器启动失败:\n${error.message}\n\n日志文件: ${logFile}`);
+            dialog.showErrorBox('启动失败', `后端服务器启动失败:\n${error.message}\n\n日志文件: ${logFile}`);
             reject(error);
         }
     });
@@ -496,7 +496,7 @@ function startFrontendServer() {
             if (!fs.existsSync(frontendPath)) {
                 const error = new Error(`前端目录不存在: ${frontendPath}`);
                 log(`错误: ${error.message}`);
-                dialog.showErrorBoxSync('启动失败', `前端目录不存在:\n${frontendPath}\n\n日志文件: ${logFile}`);
+                dialog.showErrorBox('启动失败', `前端目录不存在:\n${frontendPath}\n\n日志文件: ${logFile}`);
                 reject(error);
                 return;
             }
@@ -566,7 +566,7 @@ function startFrontendServer() {
         } catch (error) {
             log(`前端服务器初始化失败: ${error.message}`);
             log(error.stack);
-            dialog.showErrorBoxSync('启动失败', `前端服务器初始化失败:\n${error.message}\n\n日志文件: ${logFile}`);
+            dialog.showErrorBox('启动失败', `前端服务器初始化失败:\n${error.message}\n\n日志文件: ${logFile}`);
             reject(error);
         }
     });
@@ -688,7 +688,7 @@ async function startApplication() {
     } catch (error) {
         log(`❌ 应用启动失败: ${error.message}`);
         log(error.stack);
-        dialog.showErrorBoxSync('启动失败', `应用启动失败:\n\n${error.message}\n\n日志文件: ${logFile}`);
+        dialog.showErrorBox('启动失败', `应用启动失败:\n\n${error.message}\n\n日志文件: ${logFile}`);
         app.quit();
     }
 }
