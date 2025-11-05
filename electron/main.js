@@ -151,17 +151,12 @@ async function testSmtpConfig(config) {
             // 动态加载nodemailer - 需要从backend的node_modules加载
             let nodemailer;
             try {
-                // 确定backend路径 - 打包后需要从app.asar.unpacked加载native模块
+                // 确定backend路径 - 打包后从extraResources加载
                 let backendPath;
                 if (app.isPackaged) {
-                    // 尝试从unpacked目录加载（用于native模块）
-                    const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'backend');
-                    const regularPath = path.join(process.resourcesPath, 'backend');
-                    
-                    // 优先使用unpacked路径
-                    backendPath = fs.existsSync(unpackedPath) ? unpackedPath : regularPath;
-                    log(`打包模式 - Unpacked路径: ${unpackedPath}, 存在: ${fs.existsSync(unpackedPath)}`);
-                    log(`打包模式 - Regular路径: ${regularPath}, 存在: ${fs.existsSync(regularPath)}`);
+                    // 打包后，backend/node_modules 在 extraResources 中
+                    backendPath = path.join(process.resourcesPath, 'backend');
+                    log(`打包模式 - Backend路径: ${backendPath}`);
                 } else {
                     backendPath = path.join(__dirname, '../backend');
                 }
