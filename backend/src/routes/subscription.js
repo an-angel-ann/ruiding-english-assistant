@@ -177,7 +177,10 @@ router.post('/create-order', authenticateToken, async (req, res) => {
         // 调用虎皮椒创建支付订单
         try {
             // 构建返回URL，包含planType参数
-            const returnUrl = `http://localhost:8080/subscription.html?payment=success&plan=${planType}`;
+            // 使用 ruiding:// 自定义协议，支付成功后回到应用
+            const returnUrl = `ruiding://payment-success?plan=${planType}`;
+            
+            console.log('📍 支付返回URL:', returnUrl);
             
             // 生成唯一的订单号：RD + 时间戳 + 数据库ID
             const uniqueOrderId = `RD${Date.now()}${orderId}`;

@@ -46,13 +46,45 @@ if (!gotTheLock) {
     app.quit();
 } else {
     app.on('second-instance', (event, commandLine, workingDirectory) => {
-        log('检测到第二个实例，聚焦到现有窗口');
+        log('检测到第二个实例启动');
+        log('命令行参数:', commandLine);
+        
+        // 处理支付回调 URL
+        const url = commandLine.find(arg => arg.startsWith('ruiding://'));
+        if (url) {
+            log('💰 收到支付回调:', url);
+            handlePaymentCallback(url);
+        }
+        
         // 当运行第二个实例时，聚焦到已存在的窗口
         if (mainWindow) {
             if (mainWindow.isMinimized()) mainWindow.restore();
             mainWindow.focus();
         }
     });
+}
+
+// 处理支付回调
+function handlePaymentCallback(url) {
+    try {
+        log('处理支付回调 URL:', url);
+        const urlObj = new URL(url);
+        const plan = urlObj.searchParams.get('plan');
+        
+        log('支付计划:', plan);
+        
+        if (mainWindow && plan) {
+            // 导航到订阅页面并传递支付成功参数
+            mainWindow.loadURL(`http://localhost:8080/subscription.html?payment=success&plan=${plan}`);
+            
+            // 聚焦窗口
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+            mainWindow.show();
+        }
+    } catch (error) {
+        log('处理支付回调失败:', error);
+    }
 }
 
 // 禁用硬件加速（解决某些Mac上的显示问题）
@@ -345,6 +377,8 @@ function createWindow() {
     
     // 页面加载完成后发送视频路径以显示启动动画（仅首次）
     mainWindow.webContents.on('did-finish-load', () => {
+        log('页面加载完成，splashShown状态:', splashShown);
+        
         // 只在应用首次启动时显示动画
         if (!splashShown) {
             splashShown = true;
@@ -357,15 +391,21 @@ function createWindow() {
                 videoPath = path.join(__dirname, '..', 'welcomeflash.mp4');
             }
             
-            log(`视频文件路径: ${videoPath}`);
-            log(`视频文件是否存在: ${fs.existsSync(videoPath)}`);
+            log(`🎬 准备显示启动动画`);
+            log(`   视频文件路径: ${videoPath}`);
+            log(`   视频文件是否存在: ${fs.existsSync(videoPath)}`);
             
             // 使用自定义协议 URL
             const videoUrl = `local-video://${encodeURIComponent(videoPath)}`;
-            log(`视频 URL: ${videoUrl}`);
+            log(`   视频 URL: ${videoUrl}`);
             
-            // 发送视频 URL 给渲染进程
-            mainWindow.webContents.send('show-splash', videoUrl);
+            // 延迟发送，确保页面完全加载
+            setTimeout(() => {
+                log('   发送 show-splash 事件到渲染进程');
+                mainWindow.webContents.send('show-splash', videoUrl);
+            }, 100);
+        } else {
+            log('启动动画已显示过，跳过');
         }
     });
 
@@ -846,6 +886,16 @@ app.whenReady().then(async () => {
         log(`❌ 协议注册失败: ${error.message}`);
     }
     
+    // 注册 ruiding:// 协议用于支付回调
+    if (process.defaultApp) {
+        if (process.argv.length >= 2) {
+            app.setAsDefaultProtocolClient('ruiding', process.execPath, [path.resolve(process.argv[1])]);
+        }
+    } else {
+        app.setAsDefaultProtocolClient('ruiding');
+    }
+    log('✅ ruiding:// 协议注册成功');
+    
     // 直接启动应用（启动画面将在主窗口内显示）
     await startApplication();
 
@@ -855,6 +905,16 @@ app.whenReady().then(async () => {
             createWindow();
         }
     });
+});
+
+// 处理 macOS 的 open-url 事件（支付回调）
+app.on('open-url', (event, url) => {
+    event.preventDefault();
+    log('收到 open-url 事件:', url);
+    
+    if (url.startsWith('ruiding://')) {
+        handlePaymentCallback(url);
+    }
 });
 
 // 所有窗口关闭
