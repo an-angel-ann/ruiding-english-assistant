@@ -51,44 +51,57 @@ class EmailService {
             // 检查SMTP是否配置
             const smtpConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
             
-            if (smtpConfigured) {
-                // 如果配置了SMTP，尝试发送邮件
-                try {
-                    const mailOptions = {
-                        from: `"睿叮AI英语学习助手" <${process.env.SMTP_USER}>`,
-                        to: email,
-                        subject: subjects[type] || subjects['register'],
-                        html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                <h2 style="color: #667eea;">睿叮AI英语学习助手</h2>
-                                <p>${messages[type] || messages['register']}</p>
-                                <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #667eea;">
-                                    ${code}
-                                </div>
-                                <p style="color: #999; margin-top: 20px;">验证码10分钟内有效，请勿泄露给他人。</p>
+            if (!smtpConfigured || !process.env.SMTP_PASS) {
+                // SMTP未配置或授权码为空
+                console.error('❌ SMTP邮件服务未配置');
+                console.error('请按以下步骤配置：');
+                console.error('1. 登录126邮箱 (o_oangela@126.com)');
+                console.error('2. 进入"设置" -> "POP3/SMTP/IMAP"');
+                console.error('3. 开启"SMTP服务"');
+                console.error('4. 生成授权码');
+                console.error('5. 设置环境变量 SMTP_AUTH_CODE=<授权码>');
+                
+                return { 
+                    success: false, 
+                    error: '邮件服务未配置，请联系管理员配置SMTP授权码后重启应用' 
+                };
+            }
+            
+            // 尝试发送邮件
+            try {
+                const mailOptions = {
+                    from: `"睿叮AI英语学习助手" <${process.env.SMTP_USER}>`,
+                    to: email,
+                    subject: subjects[type] || subjects['register'],
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #667eea;">睿叮AI英语学习助手</h2>
+                            <p>${messages[type] || messages['register']}</p>
+                            <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #667eea;">
+                                ${code}
                             </div>
-                        `
-                    };
+                            <p style="color: #999; margin-top: 20px;">验证码10分钟内有效，请勿泄露给他人。</p>
+                        </div>
+                    `
+                };
 
-                    await this._getTransporter().sendMail(mailOptions);
-                } catch (mailError) {
-                    console.error('邮件发送失败，使用开发模式:', mailError.message);
-                    // 邮件发送失败，降级到控制台模式
-                    console.log('\n======================');
-                    console.log(`📧 验证码 (${type})`);
-                    console.log(`邮箱: ${email}`);
-                    console.log(`验证码: ${code}`);
-                    console.log(`有效期: 10分钟`);
-                    console.log('======================\n');
+                await this._getTransporter().sendMail(mailOptions);
+                console.log(`✅ 验证码已发送到: ${email}`);
+            } catch (mailError) {
+                console.error('❌ 邮件发送失败:', mailError.message);
+                
+                // 如果是认证失败，给出明确提示
+                if (mailError.message.includes('authentication') || mailError.message.includes('Invalid login')) {
+                    return { 
+                        success: false, 
+                        error: 'SMTP授权码无效，请检查授权码是否正确' 
+                    };
                 }
-            } else {
-                // 未配置SMTP，使用开发模式（控制台输出）
-                console.log('\n======================');
-                console.log(`📧 验证码 (${type}) - 开发模式`);
-                console.log(`邮箱: ${email}`);
-                console.log(`验证码: ${code}`);
-                console.log(`有效期: 10分钟`);
-                console.log('======================\n');
+                
+                return { 
+                    success: false, 
+                    error: `邮件发送失败: ${mailError.message}` 
+                };
             }
 
             // 保存验证码记录

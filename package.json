@@ -53,6 +53,11 @@
           "!data/*.db-shm",
           "!data/*.db-wal"
         ]
+      },
+      {
+        "from": "smtp-config.json",
+        "to": "smtp-config.json",
+        "filter": "**/*"
       }
     ],
     "mac": {

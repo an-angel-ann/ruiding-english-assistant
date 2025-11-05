@@ -35,6 +35,9 @@ Thumbs.db
 .env
 .env.local
 
+# SMTP configuration (contains sensitive auth code)
+smtp-config.json
+
 # Database
 backend/data/*.db
 backend/data/*.db-shm

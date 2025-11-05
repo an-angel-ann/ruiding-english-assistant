@@ -207,6 +207,37 @@ function startBackendServer() {
             process.env.NODE_ENV = 'production';
             process.env.PORT = '3001';
             
+            // 配置SMTP邮件服务
+            // 尝试从配置文件读取SMTP配置
+            try {
+                const configPath = app.isPackaged 
+                    ? path.join(process.resourcesPath, 'smtp-config.json')
+                    : path.join(__dirname, '../smtp-config.json');
+                
+                if (fs.existsSync(configPath)) {
+                    const smtpConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                    process.env.SMTP_HOST = smtpConfig.host || 'smtp.126.com';
+                    process.env.SMTP_PORT = smtpConfig.port || '465';
+                    process.env.SMTP_USER = smtpConfig.user || 'o_oangela@126.com';
+                    process.env.SMTP_PASS = smtpConfig.pass || '';
+                    log('✅ SMTP配置已加载');
+                } else {
+                    // 如果没有配置文件，尝试从环境变量读取
+                    process.env.SMTP_HOST = 'smtp.126.com';
+                    process.env.SMTP_PORT = '465';
+                    process.env.SMTP_USER = 'o_oangela@126.com';
+                    process.env.SMTP_PASS = process.env.SMTP_AUTH_CODE || '';
+                    log('⚠️ 未找到smtp-config.json，使用默认配置');
+                }
+            } catch (configError) {
+                log(`⚠️ 读取SMTP配置失败: ${configError.message}`);
+                // 使用默认配置
+                process.env.SMTP_HOST = 'smtp.126.com';
+                process.env.SMTP_PORT = '465';
+                process.env.SMTP_USER = 'o_oangela@126.com';
+                process.env.SMTP_PASS = '';
+            }
+            
             // 改变工作目录
             const originalCwd = process.cwd();
             try {

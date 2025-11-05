@@ -1,0 +1,16 @@
+{
+  "host": "smtp.126.com",
+  "port": 465,
+  "user": "o_oangela@126.com",
+  "pass": "YOUR_SMTP_AUTH_CODE_HERE",
+  "instructions": [
+    "1. 复制此文件并重命名为 smtp-config.json",
+    "2. 登录126邮箱 (o_oangela@126.com)",
+    "3. 进入 设置 -> POP3/SMTP/IMAP",
+    "4. 开启 SMTP服务",
+    "5. 生成授权码（不是邮箱密码）",
+    "6. 将上面的 YOUR_SMTP_AUTH_CODE_HERE 替换为实际的授权码",
+    "7. 保存文件",
+    "8. 重新构建应用"
+  ]
+}
