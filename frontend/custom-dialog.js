@@ -103,9 +103,13 @@ class CustomDialog {
         // 创建头部
         const header = document.createElement('div');
         header.className = 'custom-dialog-header';
+        
+        // 使用睿叮图标
+        const iconHtml = `<img src="icon.png" alt="睿叮" onerror="this.parentElement.innerHTML='${iconMap[type] || 'ℹ'}'">`;
+        
         header.innerHTML = `
             <div class="custom-dialog-icon ${type}">
-                ${iconMap[type] || 'ℹ'}
+                ${iconHtml}
             </div>
             <h2 class="custom-dialog-title">${this.escapeHtml(title)}</h2>
         `;
