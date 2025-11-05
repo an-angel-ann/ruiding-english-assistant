@@ -487,7 +487,13 @@ async function handleLogout() {
 
 // 选择学习模式
 function selectMode(mode) {
-    document.getElementById('modeSelectionPanel').style.display = 'none';
+    console.log('🎯 选择学习模式:', mode);
+    
+    // 隐藏所有面板
+    const allPanels = document.querySelectorAll('.panel');
+    allPanels.forEach(panel => {
+        panel.style.display = 'none';
+    });
     
     if (mode === 'sentence') {
         // 句子学习模式 - 重置所有状态

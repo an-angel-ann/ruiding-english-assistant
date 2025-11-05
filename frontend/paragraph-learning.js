@@ -8,6 +8,25 @@ let currentGroupIndex = 0; // 当前显示的组索引
 let totalGroups = 0; // 总组数
 let allGroupAnswers = {}; // 存储所有组的答案 {globalIndex: originalIndex}
 
+// 统一的面板切换函数
+function switchToParagraphPanel(panelId) {
+    console.log('🔄 切换到面板:', panelId);
+    
+    // 隐藏所有面板
+    const allPanels = document.querySelectorAll('.panel');
+    allPanels.forEach(panel => {
+        panel.style.display = 'none';
+    });
+    
+    // 显示目标面板
+    const targetPanel = document.getElementById(panelId);
+    if (targetPanel) {
+        targetPanel.style.display = 'block';
+    } else {
+        console.error('❌ 找不到面板:', panelId);
+    }
+}
+
 // 初始化段落上传
 function initializeParagraphUpload() {
     const uploadArea = document.getElementById('paragraphUploadArea');
@@ -227,8 +246,10 @@ async function analyzeParagraphMaterial(imageFile) {
 
 // 显示段落学习界面
 function showOverviewPanel() {
-    document.getElementById('paragraphUploadPanel').style.display = 'none';
-    document.getElementById('paragraphOverviewPanel').style.display = 'block';
+    console.log('📖 显示通篇浏览面板');
+    
+    // 切换到段落浏览面板
+    switchToParagraphPanel('paragraphOverviewPanel');
     document.getElementById('floatingVocabBall').style.display = 'block';
     
     // 显示全文（支持生词选择）
@@ -346,8 +367,7 @@ async function startParagraphLearning() {
         selectedWords = [];
     }
     
-    document.getElementById('paragraphOverviewPanel').style.display = 'none';
-    document.getElementById('paragraphMeaningPanel').style.display = 'block';
+    switchToParagraphPanel('paragraphMeaningPanel');
     showSentenceMeaningPanel();
 }
 
@@ -717,8 +737,7 @@ ${englishText}`;
 
 // 步骤二：显示句义辨别面板（五句一组，支持翻页）
 function showSentenceMeaningPanel() {
-    document.getElementById('paragraphUploadPanel').style.display = 'none';
-    document.getElementById('paragraphMeaningPanel').style.display = 'block';
+    switchToParagraphPanel('paragraphMeaningPanel');
     
     // 重置按钮状态
     const checkBtn = document.querySelector('#paragraphMeaningPanel .btn-check');
@@ -1110,8 +1129,7 @@ function showAllGroupsResults(errors) {
 
 // 下一步：结构分析（继续当前段落）
 function nextToStructureAnalysis() {
-    document.getElementById('paragraphMeaningPanel').style.display = 'none';
-    document.getElementById('paragraphStructurePanel').style.display = 'block';
+    switchToParagraphPanel('paragraphStructurePanel');
     
     showStructureAnalysisPanel();
 }
@@ -1532,8 +1550,7 @@ async function checkStructureAnswersOld() {
 
 // 下一步：段落自查（继续当前段落）
 function nextToParagraphReview() {
-    document.getElementById('paragraphStructurePanel').style.display = 'none';
-    document.getElementById('paragraphReviewPanel').style.display = 'block';
+    switchToParagraphPanel('paragraphReviewPanel');
     
     showParagraphReviewPanel();
 }
@@ -1703,8 +1720,7 @@ async function checkReviewAnswers() {
                     checkBtn.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
                     checkBtn.onclick = checkReviewAnswers;
                     // 返回步骤二，学习下一段
-                    document.getElementById('paragraphReviewPanel').style.display = 'none';
-                    document.getElementById('paragraphMeaningPanel').style.display = 'block';
+                    switchToParagraphPanel('paragraphMeaningPanel');
                     showSentenceMeaningPanel();
                 };
             } else {
@@ -1733,13 +1749,11 @@ function nextParagraphOrFinish() {
     if (currentParagraphIndex < paragraphData.paragraphs.length) {
         // 还有下一段，重新开始步骤二
         selectedWords = [];
-        document.getElementById('paragraphReviewPanel').style.display = 'none';
-        document.getElementById('paragraphMeaningPanel').style.display = 'block';
+        switchToParagraphPanel('paragraphMeaningPanel');
         showSentenceMeaningPanel();
     } else {
         // 所有段落完成，进入步骤五（段落总结）
-        document.getElementById('paragraphReviewPanel').style.display = 'none';
-        document.getElementById('paragraphSummaryPanel').style.display = 'block';
+        switchToParagraphPanel('paragraphSummaryPanel');
         showSummaryPanel();
     }
 }
@@ -2040,13 +2054,11 @@ function nextToSummaryOrNextParagraph() {
     if (currentParagraphIndex < paragraphData.paragraphs.length) {
         // 还有下一段，重新开始步骤二
         selectedWords = [];
-        document.getElementById('paragraphComprehensionPanel').style.display = 'none';
-        document.getElementById('paragraphMeaningPanel').style.display = 'block';
+        switchToParagraphPanel('paragraphMeaningPanel');
         showSentenceMeaningPanel();
     } else {
         // 所有段落完成，进入步骤六
-        document.getElementById('paragraphComprehensionPanel').style.display = 'none';
-        document.getElementById('paragraphSummaryPanel').style.display = 'block';
+        switchToParagraphPanel('paragraphSummaryPanel');
         showSummaryPanel();
     }
 }
@@ -2217,25 +2229,19 @@ async function checkSummaryAnswers() {
 // 步骤五完成，进入步骤六
 function nextToComprehensionOrNextParagraph() {
     // 步骤五完成后，进入步骤六
-    document.getElementById('paragraphSummaryPanel').style.display = 'none';
-    document.getElementById('paragraphComprehensionPanel').style.display = 'block';
+    switchToParagraphPanel('paragraphComprehensionPanel');
     showComprehensionPanel();
 }
 
 // 完成所有学习
 function finishParagraphLearning() {
-    document.getElementById('paragraphComprehensionPanel').style.display = 'none';
     showParagraphCompletionPanel();
 }
 
 // 显示完成页面
 function showParagraphCompletionPanel() {
-    // 隐藏所有其他面板
-    document.querySelectorAll('.panel').forEach(panel => {
-        panel.style.display = 'none';
-    });
-    
-    document.getElementById('paragraphCompletionPanel').style.display = 'block';
+    // 切换到完成面板
+    switchToParagraphPanel('paragraphCompletionPanel');
     
     // 隐藏悬浮生词本球（因为生词已在页面上显示）
     document.getElementById('floatingVocabBall').style.display = 'none';
