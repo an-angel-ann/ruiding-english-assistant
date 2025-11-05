@@ -317,6 +317,9 @@ async function callAliTranslation(englishSentences) {
 
 async function analyzeSentence(sentence) {
     try {
+        // 优先使用window.apiKey（特殊用户），否则从localStorage获取
+        const apiKey = window.apiKey || localStorage.getItem('apiKey') || 'sk-be5a76fb81e844e0984fac68638bc69c';
+        
         const prompt = `你是一个JSON生成器。请分析以下英文句子并返回纯JSON格式数据。
 
 句子：${sentence.english}
@@ -352,6 +355,7 @@ scrambled示例：
 现在请输出JSON：`;
 
         console.log('正在分析句子:', sentence.english.substring(0, 50) + '...');
+        console.log('使用API Key:', apiKey ? apiKey.substring(0, 10) + '...' : '无');
         
         const response = await callAliAPI(
             '/aigc/text-generation/generation',
@@ -367,7 +371,7 @@ scrambled示例：
                     result_format: 'message'
                 }
             },
-            window.apiKey || apiKey
+            apiKey
         );
         
         console.log('句子分析API响应状态:', response.status);
