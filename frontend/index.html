@@ -1460,6 +1460,16 @@ async function checkSubscriptionAndShowPanel(useCache = false) {
         return;
     }
     
+    // 检查是否是特殊账户
+    const isSpecialAccount = localStorage.getItem('isSpecialAccount') === 'true';
+    const userApiKey = localStorage.getItem('userApiKey');
+    
+    if (isSpecialAccount && userApiKey) {
+        console.log('🔑 特殊账户模式，直接显示模式选择面板');
+        showPanelBySubscription(true);
+        return;
+    }
+    
     const token = localStorage.getItem('authToken');
     
     if (!token) {
