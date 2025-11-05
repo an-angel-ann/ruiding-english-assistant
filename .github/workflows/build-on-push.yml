@@ -91,17 +91,26 @@ jobs:
         continue-on-error: true
         run: |
           echo "=== Checking packed structure ==="
-          if (Test-Path "dist\win-unpacked\resources\app.asar.unpacked\backend\node_modules") {
-            Write-Host "✅ backend\node_modules was unpacked"
-            $moduleCount = (Get-ChildItem "dist\win-unpacked\resources\app.asar.unpacked\backend\node_modules" -Directory).Count
-            Write-Host "📦 Unpacked modules: $moduleCount"
-            if (Test-Path "dist\win-unpacked\resources\app.asar.unpacked\backend\node_modules\nodemailer") {
-              Write-Host "✅ nodemailer was unpacked"
+          echo "Checking extraResources path: dist\win-unpacked\resources\backend\node_modules"
+          if (Test-Path "dist\win-unpacked\resources\backend\node_modules") {
+            Write-Host "✅ backend\node_modules exists in extraResources"
+            $moduleCount = (Get-ChildItem "dist\win-unpacked\resources\backend\node_modules" -Directory).Count
+            Write-Host "📦 Modules in extraResources: $moduleCount"
+            if (Test-Path "dist\win-unpacked\resources\backend\node_modules\nodemailer") {
+              Write-Host "✅ nodemailer exists in extraResources"
             } else {
-              Write-Host "❌ nodemailer was NOT unpacked"
+              Write-Host "❌ nodemailer NOT found in extraResources"
             }
           } else {
-            Write-Host "❌ backend\node_modules was NOT unpacked"
+            Write-Host "❌ backend\node_modules NOT found in extraResources"
+          }
+          
+          echo ""
+          echo "Checking asar.unpacked path: dist\win-unpacked\resources\app.asar.unpacked\backend\node_modules"
+          if (Test-Path "dist\win-unpacked\resources\app.asar.unpacked\backend\node_modules") {
+            Write-Host "✅ backend\node_modules also in asar.unpacked"
+          } else {
+            Write-Host "ℹ️ backend\node_modules not in asar.unpacked (expected)"
           }
       
       - name: Upload artifacts

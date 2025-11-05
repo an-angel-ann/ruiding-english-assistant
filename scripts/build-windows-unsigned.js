@@ -56,7 +56,17 @@ try {
     }
   }
   
-  // 2. 使用 --config 参数直接禁用签名
+  // 3. 验证 backend/node_modules 存在
+  console.log('\n=== 验证构建前的文件结构 ===');
+  console.log(`backend/node_modules 是否存在: ${fs.existsSync(backendNodeModules)}`);
+  if (fs.existsSync(backendNodeModules)) {
+    const modules = fs.readdirSync(backendNodeModules);
+    console.log(`backend/node_modules 中的模块数量: ${modules.length}`);
+    console.log(`是否包含 nodemailer: ${modules.includes('nodemailer')}`);
+  }
+  console.log('');
+  
+  // 4. 使用 --config 参数直接禁用签名
   execSync('npx electron-builder --win --x64 --config.forceCodeSigning=false', {
     cwd: path.join(__dirname, '..'),
     stdio: 'inherit',
