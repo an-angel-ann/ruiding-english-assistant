@@ -96,13 +96,29 @@ router.get('/me', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         
-        // 检查订阅状态，添加错误处理
+        // 特殊账户处理：ruiding.vip.user 永久会员
+        const isSpecialAccount = user.username === 'ruiding.vip.user' || user.email === 'ruiding.vip.user';
+        
         let subscription = null;
-        try {
-            subscription = await Subscription.getActiveSubscription(req.user.id);
-        } catch (error) {
-            console.error('获取订阅状态失败:', error);
-            // 即使获取订阅失败，也返回用户信息
+        
+        if (isSpecialAccount) {
+            // 特殊账户返回永久订阅
+            console.log('🔑 特殊账户访问:', user.username);
+            subscription = {
+                plan_type: 'lifetime',
+                start_date: new Date('2024-01-01').toISOString(),
+                end_date: new Date('2099-12-31').toISOString(),
+                status: 'active',
+                auto_renew: false
+            };
+        } else {
+            // 普通用户检查订阅状态
+            try {
+                subscription = await Subscription.getActiveSubscription(req.user.id);
+            } catch (error) {
+                console.error('获取订阅状态失败:', error);
+                // 即使获取订阅失败，也返回用户信息
+            }
         }
 
         res.json({
@@ -112,7 +128,8 @@ router.get('/me', authenticateToken, async (req, res) => {
                 username: user.username,
                 role: user.role,
                 createdAt: user.created_at,
-                lastLogin: user.last_login
+                lastLogin: user.last_login,
+                isSpecialAccount: isSpecialAccount
             },
             subscription: subscription ? {
                 planType: subscription.plan_type,

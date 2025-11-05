@@ -1387,17 +1387,54 @@ const useCache = urlParams.get('useCache') === 'true';
 
 // 监听启动动画事件
 if (window.electron && window.electron.ipcRenderer) {
+    console.log('🎬 Electron环境，准备监听启动动画');
+    
     // Electron环境，监听启动动画
     window.electron.ipcRenderer.on('show-splash', (event, videoPath) => {
-        console.log('🎬 启动动画开始播放');
+        console.log('🎬 收到启动动画事件:', videoPath);
         splashStarted = true;
         
-        // 等待动画播放完成（6秒）
-        setTimeout(() => {
-            console.log('✅ 启动动画播放完成');
+        // 显示启动动画覆盖层
+        const splashOverlay = document.getElementById('splashOverlay');
+        const splashVideo = document.getElementById('splashVideo');
+        
+        if (splashOverlay && splashVideo) {
+            splashOverlay.style.display = 'flex';
+            splashVideo.src = videoPath;
+            splashVideo.load();
+            
+            console.log('▶️ 开始播放启动动画');
+            splashVideo.play().then(() => {
+                console.log('✅ 启动动画播放成功');
+            }).catch(err => {
+                console.error('❌ 启动动画播放失败:', err);
+                splashOverlay.style.display = 'none';
+                splashCompleted = true;
+                checkSubscriptionAndShowPanel(useCache);
+            });
+            
+            // 动画结束后执行检查
+            splashVideo.addEventListener('ended', () => {
+                console.log('✅ 启动动画播放完成');
+                splashOverlay.style.display = 'none';
+                splashCompleted = true;
+                checkSubscriptionAndShowPanel(useCache);
+            }, { once: true });
+            
+            // 超时保护
+            setTimeout(() => {
+                if (!splashCompleted) {
+                    console.log('⏱️ 启动动画超时，强制完成');
+                    splashOverlay.style.display = 'none';
+                    splashCompleted = true;
+                    checkSubscriptionAndShowPanel(useCache);
+                }
+            }, 8000);
+        } else {
+            console.error('❌ 找不到启动动画元素');
             splashCompleted = true;
             checkSubscriptionAndShowPanel(useCache);
-        }, 6000);
+        }
     });
     
     // 如果3秒内没有收到启动动画事件，直接执行检查

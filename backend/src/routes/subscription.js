@@ -12,6 +12,12 @@ const { db } = USE_SQLITE ? require('../config/database-sqlite') : {};
 const XunhuPay = require('../utils/xunhupay');
 
 // 初始化虎皮椒支付
+console.log('🔧 虎皮椒支付配置检查:');
+console.log('   APPID:', process.env.XUNHU_APPID ? '已配置' : '❌ 未配置');
+console.log('   APPSECRET:', process.env.XUNHU_APPSECRET ? '已配置' : '❌ 未配置');
+console.log('   GATEWAY:', process.env.XUNHU_GATEWAY || '❌ 未配置');
+console.log('   NOTIFY_URL:', process.env.XUNHU_NOTIFY_URL || '❌ 未配置');
+
 const xunhuPay = new XunhuPay({
     appid: process.env.XUNHU_APPID,
     appsecret: process.env.XUNHU_APPSECRET,
