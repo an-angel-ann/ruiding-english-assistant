@@ -274,23 +274,50 @@
             hideMessages();
         }
 
-        function showError(message) {
+        // 使用自定义对话框替代原有的消息提示
+        async function showError(message, title = '错误') {
+            // 隐藏旧的消息提示
             const el = document.getElementById('errorMessage');
-            el.textContent = message;
-            el.style.display = 'block';
-            setTimeout(() => { el.style.display = 'none'; }, 5000);
+            if (el) el.style.display = 'none';
+            
+            // 使用自定义对话框
+            if (window.CustomDialog) {
+                return await window.CustomDialog.error(message, title);
+            } else {
+                // 降级方案
+                alert(message);
+            }
         }
 
-        function showSuccess(message) {
+        async function showSuccess(message, title = '成功') {
+            // 隐藏旧的消息提示
             const el = document.getElementById('successMessage');
-            el.textContent = message;
-            el.style.display = 'block';
-            setTimeout(() => { el.style.display = 'none'; }, 3000);
+            if (el) el.style.display = 'none';
+            
+            // 使用自定义对话框
+            if (window.CustomDialog) {
+                return await window.CustomDialog.success(message, title);
+            } else {
+                // 降级方案
+                alert(message);
+            }
+        }
+
+        async function showWarning(message, title = '警告') {
+            // 使用自定义对话框
+            if (window.CustomDialog) {
+                return await window.CustomDialog.warning(message, title);
+            } else {
+                // 降级方案
+                alert(message);
+            }
         }
 
         function hideMessages() {
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'none';
+            const errorEl = document.getElementById('errorMessage');
+            const successEl = document.getElementById('successMessage');
+            if (errorEl) errorEl.style.display = 'none';
+            if (successEl) successEl.style.display = 'none';
         }
 
         function validateEmail(email) {
@@ -514,7 +541,7 @@
 
                 // 注册成功后不自动登录，让用户重新登录
                 // 这样可以确保用户进入正确的普通用户界面
-                alert(`🎉 注册成功！\n\n您已获得${data.trialDays || 3}天免费试用期。\n请使用您的邮箱和密码登录。`);
+                await showSuccess(`🎉 注册成功！\n\n您已获得${data.trialDays || 3}天免费试用期。\n请使用您的邮箱和密码登录。`, '注册成功');
                 
                 // 切换到登录表单
                 switchTab('login');
