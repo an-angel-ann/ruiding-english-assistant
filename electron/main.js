@@ -95,7 +95,25 @@ function createSmtpSetupWindow() {
 async function testSmtpConfig(config) {
     return new Promise((resolve) => {
         try {
-            const nodemailer = require(path.join(__dirname, '../backend/node_modules/nodemailer'));
+            // 动态加载nodemailer - 在打包后从backend的node_modules加载
+            let nodemailer;
+            try {
+                // 尝试从backend目录加载
+                const backendPath = app.isPackaged 
+                    ? path.join(process.resourcesPath, 'backend')
+                    : path.join(__dirname, '../backend');
+                
+                // 先切换到backend目录，这样require能找到node_modules
+                const originalCwd = process.cwd();
+                process.chdir(backendPath);
+                nodemailer = require('nodemailer');
+                process.chdir(originalCwd);
+            } catch (e) {
+                log(`加载nodemailer失败: ${e.message}`);
+                resolve({ success: false, error: '无法加载邮件模块，请重新安装应用' });
+                return;
+            }
+
             const transporter = nodemailer.createTransport({
                 host: config.host,
                 port: config.port,
