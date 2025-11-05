@@ -713,6 +713,27 @@ function createMenu() {
         {
             label: '窗口',
             submenu: [
+                {
+                    label: '刷新页面',
+                    accelerator: 'CmdOrCtrl+R',
+                    click: () => {
+                        if (mainWindow) {
+                            log('用户触发页面刷新');
+                            mainWindow.webContents.reload();
+                        }
+                    }
+                },
+                {
+                    label: '强制刷新',
+                    accelerator: 'CmdOrCtrl+Shift+R',
+                    click: () => {
+                        if (mainWindow) {
+                            log('用户触发强制刷新（忽略缓存）');
+                            mainWindow.webContents.reloadIgnoringCache();
+                        }
+                    }
+                },
+                { type: 'separator' },
                 { role: 'minimize', label: '最小化' },
                 { role: 'zoom', label: '缩放' },
                 { type: 'separator' },
