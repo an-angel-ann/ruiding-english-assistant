@@ -95,25 +95,69 @@ function createSmtpSetupWindow() {
 async function testSmtpConfig(config) {
     return new Promise((resolve) => {
         try {
-            // 动态加载nodemailer - 在打包后从backend的node_modules加载
+            // 动态加载nodemailer - 需要从backend的node_modules加载
             let nodemailer;
             try {
-                // 尝试从backend目录加载
+                // 确定backend路径
                 const backendPath = app.isPackaged 
                     ? path.join(process.resourcesPath, 'backend')
                     : path.join(__dirname, '../backend');
                 
-                // 先切换到backend目录，这样require能找到node_modules
-                const originalCwd = process.cwd();
-                process.chdir(backendPath);
-                nodemailer = require('nodemailer');
-                process.chdir(originalCwd);
+                log(`Backend路径: ${backendPath}`);
+                log(`Backend路径是否存在: ${fs.existsSync(backendPath)}`);
+                
+                // 尝试多种方式加载nodemailer
+                const nodemailerPaths = [
+                    path.join(backendPath, 'node_modules', 'nodemailer'),
+                    path.join(backendPath, 'node_modules', 'nodemailer', 'lib', 'nodemailer.js'),
+                ];
+                
+                let loaded = false;
+                for (const nodemailerPath of nodemailerPaths) {
+                    log(`尝试加载: ${nodemailerPath}`);
+                    if (fs.existsSync(nodemailerPath)) {
+                        try {
+                            nodemailer = require(nodemailerPath);
+                            log(`✅ 成功从 ${nodemailerPath} 加载nodemailer`);
+                            loaded = true;
+                            break;
+                        } catch (e) {
+                            log(`从 ${nodemailerPath} 加载失败: ${e.message}`);
+                        }
+                    } else {
+                        log(`路径不存在: ${nodemailerPath}`);
+                    }
+                }
+                
+                if (!loaded) {
+                    // 最后尝试：切换工作目录后require
+                    const originalCwd = process.cwd();
+                    try {
+                        process.chdir(backendPath);
+                        nodemailer = require('nodemailer');
+                        log('✅ 通过切换工作目录成功加载nodemailer');
+                        loaded = true;
+                    } catch (e) {
+                        log(`切换目录后加载失败: ${e.message}`);
+                    } finally {
+                        process.chdir(originalCwd);
+                    }
+                }
+                
+                if (!loaded) {
+                    throw new Error('所有加载方式都失败');
+                }
             } catch (e) {
-                log(`加载nodemailer失败: ${e.message}`);
-                resolve({ success: false, error: '无法加载邮件模块，请重新安装应用' });
+                log(`❌ 加载nodemailer失败: ${e.message}`);
+                log(`Stack: ${e.stack}`);
+                resolve({ 
+                    success: false, 
+                    error: '无法加载邮件模块。请确保应用已正确安装，或联系技术支持。' 
+                });
                 return;
             }
 
+            log('开始测试SMTP连接...');
             const transporter = nodemailer.createTransport({
                 host: config.host,
                 port: config.port,
@@ -130,12 +174,13 @@ async function testSmtpConfig(config) {
                     log(`SMTP测试失败: ${error.message}`);
                     resolve({ success: false, error: error.message });
                 } else {
-                    log('SMTP测试成功');
+                    log('✅ SMTP测试成功');
                     resolve({ success: true });
                 }
             });
         } catch (error) {
             log(`SMTP测试异常: ${error.message}`);
+            log(`Stack: ${error.stack}`);
             resolve({ success: false, error: error.message });
         }
     });
