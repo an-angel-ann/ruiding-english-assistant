@@ -1479,7 +1479,12 @@ async function checkSubscriptionAndShowPanel(useCache = false) {
             // 缓存有效期：30秒
             if (cacheAge < 30000) {
                 console.log('⚡ 使用缓存数据快速显示');
-                showPanelBySubscription(cache.hasValidSubscription);
+                
+                // 如果是特殊账户，确保显示为有效订阅
+                const hasValidSubscription = cache.isSpecialAccount ? true : cache.hasValidSubscription;
+                console.log('📦 缓存数据 - 特殊账户:', cache.isSpecialAccount, '有效订阅:', hasValidSubscription);
+                
+                showPanelBySubscription(hasValidSubscription);
                 
                 // 后台验证订阅状态
                 verifySubscriptionInBackground(token);
@@ -1579,15 +1584,29 @@ async function verifySubscriptionInBackground(token) {
         
         if (response.ok) {
             const data = await response.json();
-            const hasValidSubscription = data.subscription && new Date(data.subscription.endDate) > new Date();
             
-            // 更新缓存
+            // 检查是否是特殊账户
+            const isSpecialAccount = data.user && (data.user.isSpecialAccount || data.user.username === 'ruiding.vip.user' || data.user.email === 'ruiding.vip.user');
+            
+            // 检查是否有有效订阅
+            let hasValidSubscription = false;
+            if (isSpecialAccount) {
+                // 特殊账户永久有效
+                console.log('🔄 后台验证 - 特殊账户，永久有效');
+                hasValidSubscription = true;
+            } else if (data.subscription) {
+                // 普通用户检查订阅到期时间
+                hasValidSubscription = new Date(data.subscription.endDate) > new Date();
+            }
+            
+            // 更新缓存（包含特殊账户标记）
             localStorage.setItem('subscriptionCache', JSON.stringify({
                 hasValidSubscription,
+                isSpecialAccount,
                 timestamp: Date.now()
             }));
             
-            console.log('🔄 后台验证完成，订阅状态:', hasValidSubscription);
+            console.log('🔄 后台验证完成 - 特殊账户:', isSpecialAccount, '订阅状态:', hasValidSubscription);
         }
     } catch (error) {
         console.error('后台验证失败:', error);
