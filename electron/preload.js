@@ -19,7 +19,21 @@ contextBridge.exposeInMainWorld('electron', {
         on: (channel, func) => {
             const validChannels = ['show-splash'];
             if (validChannels.includes(channel)) {
-                ipcRenderer.on(channel, (event, ...args) => func(event, ...args));
+                // 移除 event 参数，直接传递数据
+                ipcRenderer.on(channel, (event, ...args) => {
+                    console.log(`[Preload] 收到 ${channel} 事件，参数:`, args);
+                    func(...args);
+                });
+            }
+        },
+        // 添加 once 方法
+        once: (channel, func) => {
+            const validChannels = ['show-splash'];
+            if (validChannels.includes(channel)) {
+                ipcRenderer.once(channel, (event, ...args) => {
+                    console.log(`[Preload] 收到一次性 ${channel} 事件，参数:`, args);
+                    func(...args);
+                });
             }
         }
     }

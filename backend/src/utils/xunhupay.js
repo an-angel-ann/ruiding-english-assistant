@@ -50,9 +50,13 @@ class XunhuPay {
 
             const response = await axios.post(url, null, {
                 params: params,
-                timeout: 10000,
-                maxContentLength: 50 * 1024 * 1024, // 50MB
-                maxBodyLength: 50 * 1024 * 1024 // 50MB
+                timeout: 30000, // 增加超时时间到30秒
+                maxContentLength: Infinity, // 无限制
+                maxBodyLength: Infinity, // 无限制
+                maxRedirects: 5,
+                validateStatus: function (status) {
+                    return status >= 200 && status < 500; // 接受所有非5xx错误
+                }
             });
 
             console.log('✅ 虎皮椒响应状态:', response.status);

@@ -1389,15 +1389,16 @@ const useCache = urlParams.get('useCache') === 'true';
 // 监听启动动画事件
 if (window.electron && window.electron.ipcRenderer) {
     console.log('🎬 Electron环境，准备监听启动动画');
+    console.log('🎬 IPC监听器类型:', typeof window.electron.ipcRenderer.on);
     
-    // Electron环境，监听启动动画
-    window.electron.ipcRenderer.on('show-splash', (event, videoPath) => {
-        console.log('🎬 收到启动动画事件:', videoPath);
+    // Electron环境，监听启动动画（注意：preload已经移除了event参数）
+    window.electron.ipcRenderer.on('show-splash', (videoPath) => {
+        console.log('🎬 收到启动动画事件，视频路径:', videoPath);
         splashStarted = true;
         
         // 显示启动动画覆盖层
-        const splashOverlay = document.getElementById('splashOverlay');
-        const splashVideo = document.getElementById('splashVideo');
+        const splashOverlay = document.getElementById('splash-overlay');
+        const splashVideo = document.getElementById('splash-video');
         
         if (splashOverlay && splashVideo) {
             splashOverlay.style.display = 'flex';
@@ -1526,9 +1527,10 @@ async function checkSubscriptionAndShowPanel(useCache = false) {
         
         console.log('✅ 有效订阅:', hasValidSubscription);
         
-        // 缓存订阅状态
+        // 缓存订阅状态（包含特殊账户标记）
         localStorage.setItem('subscriptionCache', JSON.stringify({
             hasValidSubscription,
+            isSpecialAccount,
             timestamp: Date.now()
         }));
         
