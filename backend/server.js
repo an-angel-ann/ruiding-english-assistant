@@ -90,6 +90,10 @@ async function startServer() {
         const dbConnected = await testConnection();
         if (!dbConnected) {
             console.error('❌ 数据库连接失败，服务器启动中止');
+            // 在Electron环境中，不要调用process.exit，而是抛出错误让主进程处理
+            if (process.type === 'renderer' || process.versions.electron) {
+                throw new Error('数据库连接失败');
+            }
             process.exit(1);
         }
 
@@ -113,6 +117,10 @@ async function startServer() {
         });
     } catch (error) {
         console.error('❌ 服务器启动失败:', error);
+        // 在Electron环境中，不要调用process.exit，而是抛出错误让主进程处理
+        if (process.type === 'renderer' || process.versions.electron) {
+            throw error;
+        }
         process.exit(1);
     }
 }
