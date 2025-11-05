@@ -1375,16 +1375,39 @@ if (window.electron && window.electron.ipcRenderer) {
 }
 
 // 页面加载时检查订阅状态并决定显示哪个面板
-(async function checkSubscriptionAndShowPanel() {
+// 延迟执行，等待启动动画播放完成
+let splashCompleted = false;
+
+// 监听启动动画完成事件
+if (window.electron && window.electron.ipcRenderer) {
+    // Electron环境，等待启动动画
+    setTimeout(() => {
+        splashCompleted = true;
+        checkSubscriptionAndShowPanel();
+    }, 6000); // 等待6秒（启动动画约5秒）
+} else {
+    // 非Electron环境，立即执行
+    splashCompleted = true;
+    checkSubscriptionAndShowPanel();
+}
+
+async function checkSubscriptionAndShowPanel() {
+    if (!splashCompleted) {
+        console.log('⏳ 等待启动动画完成...');
+        return;
+    }
+    
     const token = localStorage.getItem('authToken');
     
     if (!token) {
         // 未登录，跳转到登录页
+        console.log('❌ 未登录，跳转到登录页');
         window.location.href = 'auth.html';
         return;
     }
     
     try {
+        console.log('🔍 检查用户订阅状态...');
         // 获取用户信息和订阅状态
         const response = await fetch('http://localhost:3001/api/auth/me', {
             headers: {
@@ -1394,6 +1417,7 @@ if (window.electron && window.electron.ipcRenderer) {
         
         if (!response.ok) {
             // Token 无效，跳转到登录页
+            console.log('❌ Token无效，跳转到登录页');
             localStorage.removeItem('authToken');
             window.location.href = 'auth.html';
             return;
@@ -1407,16 +1431,26 @@ if (window.electron && window.electron.ipcRenderer) {
         
         console.log('✅ 有效订阅:', hasValidSubscription);
         
+        // 先隐藏所有面板
+        const allPanels = document.querySelectorAll('.panel');
+        allPanels.forEach(panel => {
+            panel.style.display = 'none';
+        });
+        
         if (hasValidSubscription) {
             // 有有效订阅，显示模式选择面板
             console.log('→ 显示模式选择面板');
-            document.getElementById('modeSelectionPanel').style.display = 'block';
-            document.getElementById('apiKeyPanel').style.display = 'none';
+            const modePanel = document.getElementById('modeSelectionPanel');
+            if (modePanel) {
+                modePanel.style.display = 'block';
+            }
         } else {
             // 没有有效订阅，显示订阅面板
             console.log('→ 显示订阅面板');
-            document.getElementById('apiKeyPanel').style.display = 'block';
-            document.getElementById('modeSelectionPanel').style.display = 'none';
+            const apiPanel = document.getElementById('apiKeyPanel');
+            if (apiPanel) {
+                apiPanel.style.display = 'block';
+            }
         }
     } catch (error) {
         console.error('❌ 检查订阅状态失败:', error);
@@ -1424,6 +1458,6 @@ if (window.electron && window.electron.ipcRenderer) {
         document.getElementById('apiKeyPanel').style.display = 'block';
         document.getElementById('modeSelectionPanel').style.display = 'none';
     }
-})();
+}
 </script>
 </html>

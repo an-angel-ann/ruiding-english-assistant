@@ -198,8 +198,13 @@ router.post('/create-order', authenticateToken, async (req, res) => {
             });
 
         } catch (payError) {
-            console.error('虎皮椒支付创建失败:', payError);
-            res.status(500).json({ error: '创建支付订单失败，请稍后重试' });
+            console.error('❌ 虎皮椒支付创建失败:', payError);
+            console.error('错误堆栈:', payError.stack);
+            console.error('错误详情:', {
+                message: payError.message,
+                code: payError.code
+            });
+            res.status(500).json({ error: '创建支付订单失败: ' + payError.message });
         }
 
     } catch (error) {
