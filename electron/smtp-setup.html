@@ -224,7 +224,7 @@
     <div class="container">
         <div class="header">
             <h1>📧 邮件服务配置</h1>
-            <p>首次使用需要配置邮件服务，用于发送注册验证码</p>
+            <p>配置您的邮箱以发送注册验证码</p>
         </div>
         
         <div class="info-box">
@@ -286,7 +286,7 @@
             </div>
             
             <div class="button-group">
-                <button type="button" class="btn btn-secondary" onclick="skipSetup()">稍后配置</button>
+                <button type="button" class="btn btn-secondary" onclick="cancelSetup()">返回</button>
                 <button type="submit" class="btn btn-primary">保存并测试</button>
             </div>
         </form>
@@ -432,10 +432,10 @@
                 const result = await ipcRenderer.invoke('test-smtp-config', smtpConfig);
                 
                 if (result.success) {
-                    showSuccess('✅ 邮件服务配置成功！正在启动应用...');
+                    showSuccess('✅ 邮件服务配置成功！');
                     setTimeout(() => {
                         ipcRenderer.send('smtp-config-complete', smtpConfig);
-                    }, 1500);
+                    }, 1000);
                 } else {
                     showError(`配置失败: ${result.error}`);
                 }
@@ -447,10 +447,8 @@
             }
         });
         
-        function skipSetup() {
-            if (confirm('跳过配置后，用户将无法注册新账户。\n\n您可以稍后在应用设置中配置邮件服务。\n\n确定要跳过吗？')) {
-                ipcRenderer.send('smtp-config-skip');
-            }
+        function cancelSetup() {
+            ipcRenderer.send('smtp-config-cancel');
         }
         
         // 初始化

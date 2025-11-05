@@ -7,5 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 文件保存相关API
     saveFile: (options) => ipcRenderer.invoke('save-file', options),
     savePDF: (htmlContent, defaultFilename) => ipcRenderer.invoke('save-pdf', htmlContent, defaultFilename),
-    saveWord: (htmlContent, defaultFilename) => ipcRenderer.invoke('save-word', htmlContent, defaultFilename)
+    saveWord: (htmlContent, defaultFilename) => ipcRenderer.invoke('save-word', htmlContent, defaultFilename),
+    // SMTP配置相关API
+    openSmtpSetup: () => ipcRenderer.send('open-smtp-setup'),
+    onSmtpConfigUpdated: (callback) => ipcRenderer.on('smtp-config-updated', callback)
 });

@@ -195,6 +195,9 @@
                         获取验证码
                     </button>
                 </div>
+                <p style="font-size: 12px; color: #999; margin-top: 8px;">
+                    收不到验证码？<a href="#" onclick="openSmtpSetup(); return false;" style="color: #667eea; text-decoration: none;">点击配置邮件服务</a>
+                </p>
             </div>
 
             <div class="form-group">
@@ -225,6 +228,9 @@
                         获取验证码
                     </button>
                 </div>
+                <p style="font-size: 12px; color: #999; margin-top: 8px;">
+                    收不到验证码？<a href="#" onclick="openSmtpSetup(); return false;" style="color: #667eea; text-decoration: none;">点击配置邮件服务</a>
+                </p>
             </div>
 
             <div class="form-group">
@@ -287,6 +293,22 @@
 
         function validateEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        // 打开SMTP配置窗口
+        function openSmtpSetup() {
+            if (window.electronAPI && window.electronAPI.openSmtpSetup) {
+                window.electronAPI.openSmtpSetup();
+            } else {
+                showError('此功能仅在桌面应用中可用');
+            }
+        }
+
+        // 监听SMTP配置更新
+        if (window.electronAPI && window.electronAPI.onSmtpConfigUpdated) {
+            window.electronAPI.onSmtpConfigUpdated(() => {
+                showSuccess('✅ 邮件服务配置成功！现在可以重新发送验证码了');
+            });
         }
 
         async function sendVerificationCode() {

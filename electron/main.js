@@ -518,18 +518,30 @@ ipcMain.on('smtp-config-complete', (event, config) => {
     saveSmtpConfig(config);
     if (smtpSetupWindow) {
         smtpSetupWindow.close();
+        smtpSetupWindow = null;
     }
-    // 继续启动应用
-    startApplication();
+    // 通知主窗口配置已完成
+    if (mainWindow) {
+        mainWindow.webContents.send('smtp-config-updated');
+    }
 });
 
-ipcMain.on('smtp-config-skip', () => {
-    log('用户跳过SMTP配置');
+ipcMain.on('smtp-config-cancel', () => {
+    log('用户取消SMTP配置');
     if (smtpSetupWindow) {
         smtpSetupWindow.close();
+        smtpSetupWindow = null;
     }
-    // 继续启动应用（但邮件功能不可用）
-    startApplication();
+});
+
+// 从前端打开SMTP配置窗口
+ipcMain.on('open-smtp-setup', () => {
+    log('前端请求打开SMTP配置窗口');
+    if (smtpSetupWindow) {
+        smtpSetupWindow.focus();
+    } else {
+        createSmtpSetupWindow();
+    }
 });
 
 // 启动应用主流程
@@ -569,23 +581,13 @@ async function startApplication() {
 app.whenReady().then(async () => {
     log('应用准备就绪，开始初始化...');
     
-    // 检查是否需要SMTP配置
-    if (needsSmtpSetup()) {
-        log('首次启动，显示SMTP配置向导');
-        createSmtpSetupWindow();
-    } else {
-        log('SMTP已配置，直接启动应用');
-        await startApplication();
-    }
+    // 直接启动应用，不强制配置SMTP
+    await startApplication();
 
     app.on('activate', () => {
         log('应用被激活');
         if (BrowserWindow.getAllWindows().length === 0) {
-            if (needsSmtpSetup()) {
-                createSmtpSetupWindow();
-            } else {
-                createWindow();
-            }
+            createWindow();
         }
     });
 });
