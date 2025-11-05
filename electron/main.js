@@ -235,12 +235,13 @@ function startBackendServer() {
             // 恢复工作目录
             process.chdir(originalCwd);
             
-            log('后端服务器已启动');
+            log('后端服务器脚本已加载，等待服务器启动...');
             
             // 等待服务器完全启动
             setTimeout(() => {
+                log('后端服务器启动等待完成');
                 resolve();
-            }, 2000);
+            }, 3000);
         } catch (error) {
             log(`后端启动失败: ${error.message}`);
             log(error.stack);
@@ -252,32 +253,44 @@ function startBackendServer() {
 
 // 启动前端服务器
 function startFrontendServer() {
+    log('=== 开始启动前端服务器 ===');
     return new Promise((resolve, reject) => {
-        // 获取正确的资源路径
-        let frontendPath;
-        if (app.isPackaged) {
+        try {
+            // 获取正确的资源路径
+            let frontendPath;
+            if (app.isPackaged) {
+                const fs = require('fs');
+                
+                // 优先使用app.asar.unpacked（frontend在asarUnpack中）
+                const appPath = app.getAppPath();
+                frontendPath = path.join(appPath, '..', 'app.asar.unpacked', 'frontend');
+                
+                if (!fs.existsSync(frontendPath)) {
+                    frontendPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'frontend');
+                }
+                if (!fs.existsSync(frontendPath)) {
+                    frontendPath = path.join(process.resourcesPath, 'frontend');
+                }
+            } else {
+                frontendPath = path.join(__dirname, '../frontend');
+            }
+
+            const http = require('http');
             const fs = require('fs');
-            
-            // 优先使用app.asar.unpacked（frontend在asarUnpack中）
-            const appPath = app.getAppPath();
-            frontendPath = path.join(appPath, '..', 'app.asar.unpacked', 'frontend');
+            const pathModule = require('path');
+
+            log(`前端路径: ${frontendPath}`);
+            log(`前端目录是否存在: ${fs.existsSync(frontendPath)}`);
             
             if (!fs.existsSync(frontendPath)) {
-                frontendPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'frontend');
+                const error = new Error(`前端目录不存在: ${frontendPath}`);
+                log(`错误: ${error.message}`);
+                dialog.showErrorBoxSync('启动失败', `前端目录不存在:\n${frontendPath}\n\n日志文件: ${logFile}`);
+                reject(error);
+                return;
             }
-            if (!fs.existsSync(frontendPath)) {
-                frontendPath = path.join(process.resourcesPath, 'frontend');
-            }
-        } else {
-            frontendPath = path.join(__dirname, '../frontend');
-        }
-
-        const http = require('http');
-        const fs = require('fs');
-        const pathModule = require('path');
-
-        log(`前端路径: ${frontendPath}`);
-        log(`前端目录是否存在: ${fs.existsSync(frontendPath)}`);
+            
+            log('创建HTTP服务器...');
 
         const server = http.createServer((req, res) => {
             // 处理URL参数
@@ -339,6 +352,12 @@ function startFrontendServer() {
                 reject(error);
             }
         });
+        } catch (error) {
+            log(`前端服务器初始化失败: ${error.message}`);
+            log(error.stack);
+            dialog.showErrorBoxSync('启动失败', `前端服务器初始化失败:\n${error.message}\n\n日志文件: ${logFile}`);
+            reject(error);
+        }
     });
 }
 
