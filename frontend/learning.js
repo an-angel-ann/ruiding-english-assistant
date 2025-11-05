@@ -267,7 +267,7 @@ wordOptions.forEach(function(el, index) {
 }
 
 // 检查词义匹配
-function checkWordMatching() {
+async function checkWordMatching() {
     console.log('=== 检查词义匹配 ===');
     console.log('当前单词数量:', currentLearningData.words.length);
     
@@ -333,7 +333,7 @@ function checkWordMatching() {
         }
     } else {
         console.log('⚠️ 有错误，显示提示');
-        alert('还有错误，请再试试！');
+        await showWarning('还有错误，请再试试！', '提示');
         // 清除错误标记
         setTimeout(() => {
             document.querySelectorAll('.incorrect-answer').forEach(el => {
@@ -344,15 +344,15 @@ function checkWordMatching() {
 }
 
 // 添加到生词本
-function addToVocabulary(index) {
+async function addToVocabulary(index) {
     const word = currentLearningData.words[index];
     const exists = vocabularyBook.some(v => v.english === word.english);
     
     if (!exists) {
         vocabularyBook.push(word);
-        alert(`已添加"${word.english}"到生词本`);
+        await showSuccess(`已添加"${word.english}"到生词本`, '添加成功');
     } else {
-        alert('该单词已在生词本中');
+        await showInfo('该单词已在生词本中', '提示');
     }
 }
 
@@ -462,7 +462,7 @@ function initializeStructureDragDrop() {
 }
 
 // 检查结构分析
-function checkStructure() {
+async function checkStructure() {
     console.log('=== 检查结构分析 ===');
     let allCorrect = true;
     const dropZones = document.querySelectorAll('#structureSlots .drop-zone');
@@ -517,7 +517,7 @@ function checkStructure() {
         }
     } else {
         console.log('⚠️ 有错误，显示提示');
-        alert('还有错误，请再试试！');
+        await showWarning('还有错误，请再试试！', '提示');
         setTimeout(() => {
             document.querySelectorAll('.incorrect-answer').forEach(el => {
                 el.classList.remove('incorrect-answer');
@@ -746,7 +746,7 @@ if (targetElement && answerDiv.contains(targetElement)) {
 }
 
 // 检查句子重组 - 改进版：完全忽略标点符号
-function checkReorder() {
+async function checkReorder() {
     console.log('=== 检查句子重组 ===');
     const answerDiv = document.getElementById('reorderAnswer');
     const words = Array.from(answerDiv.querySelectorAll('.word-option')).map(el => el.dataset.word);
@@ -805,7 +805,7 @@ function checkReorder() {
         console.log('  正确:', normalizedCorrect);
         
         // 友好提示：只显示单词对比，不要求标点符号
-        alert(`答案不正确，请再试试！\n\n提示：检查单词顺序是否正确（不需要标点符号）\n\n您的答案：${normalizedUser}\n正确答案：${normalizedCorrect}`);
+        await showWarning(`答案不正确，请再试试！\n\n提示：检查单词顺序是否正确（不需要标点符号）\n\n您的答案：${normalizedUser}\n正确答案：${normalizedCorrect}`, '答案错误');
         answerDiv.classList.add('incorrect-answer');
         setTimeout(() => {
             answerDiv.classList.remove('incorrect-answer');
@@ -1340,14 +1340,14 @@ async function exportToWord() {
             
             if (result.success) {
                 console.log('✅ 导出成功！文件路径:', result.filePath);
-                alert(`✅ 导出成功！\n\n文件已保存至：\n${result.filePath}`);
+                await showSuccess(`导出成功！\n\n文件已保存至：\n${result.filePath}`, '导出成功');
             } else {
                 console.error('❌ 保存失败:', result.error);
-                alert(`❌ 保存失败：${result.error || '未知错误'}`);
+                await showError(`保存失败：${result.error || '未知错误'}`, '导出失败');
             }
         } catch (error) {
             console.error('❌ 导出失败:', error);
-            alert(`❌ 导出失败：${error.message}`);
+            await showError(`导出失败：${error.message}`, '导出失败');
         }
     } else {
         // 浏览器环境：使用传统下载方式
@@ -1372,7 +1372,7 @@ async function exportToWord() {
             setTimeout(() => URL.revokeObjectURL(url), 100);
             
             console.log('✅ 导出成功！');
-            alert('✅ 导出成功！\n文件已保存到下载文件夹');
+            await showSuccess('导出成功！\n文件已保存到下载文件夹', '导出成功');
         }
     }
 }
@@ -1554,12 +1554,12 @@ function speakWord(word) {
 }
 
 // 🔊 通用朗读函数（使用Web Speech API，使用用户选择的语音）
-function speakText(text) {
+async function speakText(text) {
     try {
         // 检查浏览器是否支持
         if (!('speechSynthesis' in window)) {
             console.warn('浏览器不支持语音合成');
-            alert('您的浏览器不支持语音朗读功能');
+            await showWarning('您的浏览器不支持语音朗读功能', '不支持');
             return;
         }
         

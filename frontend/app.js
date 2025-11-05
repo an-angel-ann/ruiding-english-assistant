@@ -442,8 +442,8 @@ function startSubscriptionCountdown() {
 }
 
 // 处理订阅到期
-function handleSubscriptionExpired() {
-    alert('您的订阅已到期！\n\n请续费以继续使用AI智能学习功能。');
+async function handleSubscriptionExpired() {
+    await showWarning('您的订阅已到期！\n\n请续费以继续使用AI智能学习功能。', '订阅到期');
     
     // 清除AI Key
     apiKey = '';
@@ -466,8 +466,9 @@ function handleSubscriptionExpired() {
 }
 
 // 登出功能
-function handleLogout() {
-    if (confirm('确定要登出吗？')) {
+async function handleLogout() {
+    const confirmed = await showConfirm('确定要登出吗？', '确认登出');
+    if (confirmed) {
         // 清除倒计时
         if (countdownInterval) {
             clearInterval(countdownInterval);
@@ -633,7 +634,7 @@ function handleImageUpload(file) {
 // 分析图片 - 调用阿里云API
 async function analyzeImage() {
     if (!currentImage) {
-        alert('请先上传图片');
+        await showWarning('请先上传图片', '提示');
         return;
     }
     
@@ -669,7 +670,7 @@ async function analyzeImage() {
     } catch (error) {
         hideLoading();
         console.error('分析失败详情:', error);
-        alert('分析失败：' + error.message);
+        await showError('分析失败：' + error.message, '分析失败');
     }
 }
 
@@ -729,7 +730,7 @@ async function analyzeSentenceFromText() {
     const text = textInput.value.trim();
     
     if (!text) {
-        alert('请输入英语句子');
+        await showWarning('请输入英语句子', '提示');
         return;
     }
     
@@ -757,7 +758,7 @@ async function analyzeSentenceFromText() {
     } catch (error) {
         hideLoading();
         console.error('分析失败:', error);
-        alert('分析失败：' + error.message);
+        await showError('分析失败：' + error.message, '分析失败');
     }
 }
 
@@ -849,14 +850,14 @@ async function loadSentenceLearning() {
             if (attempt >= maxRetries) {
                 // 已达到最大重试次数
                 hideLoading();
-                const retry = confirm(`生成学习内容失败（已尝试${maxRetries}次）：\n${error.message}\n\n点击"确定"继续重试，点击"取消"跳过此句`);
+                const retry = await showConfirm(`生成学习内容失败（已尝试${maxRetries}次）：\n${error.message}\n\n点击"确定"继续重试，点击"取消"跳过此句`, '生成失败');
                 
                 if (retry) {
                     // 用户选择继续重试，重置attempt继续循环
                     attempt = 0;
                 } else {
                     // 用户选择跳过
-                    alert('已跳过当前句子');
+                    await showInfo('已跳过当前句子', '跳过');
                     currentSentenceIndex++;
                     await loadSentenceLearning();
                     return;
