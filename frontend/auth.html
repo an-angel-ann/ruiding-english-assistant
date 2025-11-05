@@ -274,51 +274,16 @@
             hideMessages();
         }
 
-        // 使用自定义对话框替代原有的消息提示
-        async function showError(message, title = '错误') {
-            // 隐藏旧的消息提示
-            const el = document.getElementById('errorMessage');
-            if (el) el.style.display = 'none';
-            
-            // 使用自定义对话框
-            if (window.CustomDialog) {
-                return await window.CustomDialog.error(message, title);
-            } else {
-                // 降级方案
-                alert(message);
-            }
-        }
-
-        async function showSuccess(message, title = '成功') {
-            // 隐藏旧的消息提示
-            const el = document.getElementById('successMessage');
-            if (el) el.style.display = 'none';
-            
-            // 使用自定义对话框
-            if (window.CustomDialog) {
-                return await window.CustomDialog.success(message, title);
-            } else {
-                // 降级方案
-                alert(message);
-            }
-        }
-
-        async function showWarning(message, title = '警告') {
-            // 使用自定义对话框
-            if (window.CustomDialog) {
-                return await window.CustomDialog.warning(message, title);
-            } else {
-                // 降级方案
-                alert(message);
-            }
-        }
-
+        // 隐藏旧的内联消息提示（现在使用自定义对话框）
         function hideMessages() {
             const errorEl = document.getElementById('errorMessage');
             const successEl = document.getElementById('successMessage');
             if (errorEl) errorEl.style.display = 'none';
             if (successEl) successEl.style.display = 'none';
         }
+        
+        // 注意：showError、showSuccess、showWarning 等函数
+        // 已由 custom-dialog.js 提供，无需在此重新定义
 
         function validateEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
