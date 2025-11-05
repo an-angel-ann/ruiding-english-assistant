@@ -6,7 +6,8 @@ const { db } = require('../config/database');
 const XunhuPay = require('../utils/xunhupay');
 
 // 根据配置加载对应的模型
-const USE_SQLITE = process.env.USE_SQLITE === 'true';
+// 在Electron环境中默认使用SQLite
+const USE_SQLITE = process.env.USE_SQLITE === 'true' || process.versions.electron;
 const Subscription = USE_SQLITE ? require('../models/Subscription-sqlite') : require('../models/Subscription');
 const User = USE_SQLITE ? require('../models/User-sqlite') : require('../models/User');
 const emailService = USE_SQLITE ? require('../utils/email-service-sqlite') : require('../utils/email-service');

@@ -1,5 +1,6 @@
 // 根据配置加载对应的模型
-const USE_SQLITE = process.env.USE_SQLITE === 'true';
+// 在Electron环境中默认使用SQLite
+const USE_SQLITE = process.env.USE_SQLITE === 'true' || process.versions.electron;
 const User = USE_SQLITE ? require('../models/User-sqlite') : require('../models/User');
 const Subscription = USE_SQLITE ? require('../models/Subscription-sqlite') : require('../models/Subscription');
 const { generateToken, authenticateToken } = require('../middleware/auth');
