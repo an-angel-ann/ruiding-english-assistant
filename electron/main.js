@@ -479,6 +479,30 @@ function startBackendServer() {
             process.env.NODE_ENV = 'production';
             process.env.PORT = '3001';
             
+            // 从backend/.env文件加载JWT_SECRET等关键配置
+            const envPath = path.join(backendPath, '.env');
+            if (fs.existsSync(envPath)) {
+                const envContent = fs.readFileSync(envPath, 'utf8');
+                const envLines = envContent.split('\n');
+                envLines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed && !trimmed.startsWith('#')) {
+                        const [key, ...valueParts] = trimmed.split('=');
+                        if (key && valueParts.length > 0) {
+                            const value = valueParts.join('=').trim();
+                            process.env[key.trim()] = value;
+                        }
+                    }
+                });
+                log('✅ 已从.env文件加载环境变量');
+                log(`JWT_SECRET已设置: ${process.env.JWT_SECRET ? '是' : '否'}`);
+            } else {
+                log('⚠️ .env文件不存在，使用默认配置');
+                // 设置默认的JWT_SECRET
+                process.env.JWT_SECRET = 'Ru1d1ng2025SecretKeyForJWT32chars';
+                process.env.JWT_EXPIRE = '7d';
+            }
+            
             // 配置SMTP邮件服务
             // 从electron-store读取用户配置的SMTP
             const smtpConfig = getSmtpConfig();

@@ -35,6 +35,7 @@
       "frontend/**/*",
       "!frontend/node_modules",
       "backend/**/*",
+      "backend/.env",
       "backend/node_modules/**/*",
       "welcomeflash.mp4",
       "!**/*.map",
