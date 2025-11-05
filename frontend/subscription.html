@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订阅套餐 - 睿叮AI英语学习助手</title>
+    <link rel="stylesheet" href="custom-dialog.css">
+    <script src="custom-dialog.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -241,7 +243,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('authToken');
             if (!token) {
-                alert('请先登录');
+                await showWarning('请先登录', '提示');
                 window.location.href = '/auth.html';
                 return;
             }
@@ -288,18 +290,18 @@
                     console.log('📥 支付回调响应:', callbackData);
                     
                     if (callbackResponse.ok) {
-                        alert(`🎉 ${callbackData.message}\n\n已增加 ${callbackData.subscription.daysAdded} 天会员时长！\n\n剩余时间：${callbackData.subscription.remainingDays} 天`);
+                        await showSuccess(`${callbackData.message}\n\n已增加 ${callbackData.subscription.daysAdded} 天会员时长！\n\n剩余时间：${callbackData.subscription.remainingDays} 天`, '支付成功');
                         
                         // 清除URL参数并刷新页面
                         window.history.replaceState({}, document.title, window.location.pathname);
                         window.location.reload();
                     } else {
-                        alert('⚠️ ' + (callbackData.error || '处理支付失败'));
+                        await showError(callbackData.error || '处理支付失败', '支付失败');
                         console.error('支付回调失败:', callbackData);
                     }
                 } catch (error) {
                     console.error('处理支付回调错误:', error);
-                    alert('⚠️ 处理支付时发生错误：' + error.message);
+                    await showError('处理支付时发生错误：' + error.message, '错误');
                 }
             }
 
@@ -381,7 +383,7 @@
 
             const token = localStorage.getItem('authToken');
             if (!token) {
-                alert('请先登录');
+                await showWarning('请先登录', '提示');
                 window.location.href = '/auth.html';
                 return;
             }
@@ -392,7 +394,8 @@
                 'yearly': '年度会员（¥299/年）'
             };
 
-            if (!confirm(`确定要订阅${planNames[planType]}吗？`)) {
+            const confirmed = await showConfirm(`确定要订阅${planNames[planType]}吗？`, '确认订阅');
+            if (!confirmed) {
                 return;
             }
 
@@ -419,13 +422,13 @@
                     window.location.href = data.paymentUrl;
                 } else if (data.success && data.order) {
                     console.log('订单创建成功:', data.order);
-                    alert('订单创建成功！\n订单号: ' + data.order.orderId + '\n价格: ¥' + data.order.price + '\n\n请联系管理员完成支付。');
+                    await showSuccess('订单创建成功！\n订单号: ' + data.order.orderId + '\n价格: ￥' + data.order.price + '\n\n请联系管理员完成支付。', '订单创建成功');
                 } else {
                     throw new Error('未获取到支付信息');
                 }
             } catch (error) {
                 console.error('支付错误:', error);
-                alert('创建订单失败: ' + error.message);
+                await showError('创建订单失败: ' + error.message, '订单创建失败');
             }
         }
     </script>

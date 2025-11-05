@@ -28,6 +28,11 @@ log(`日志文件: ${logFile}`);
 const store = new Store();
 let mainWindow;
 let splashWindow;
+
+// 图标路径
+const iconPath = app.isPackaged 
+    ? path.join(process.resourcesPath, 'icon.ico')
+    : path.join(__dirname, '..', 'icon.ico');
 let smtpSetupWindow;
 let backendProcess;
 let frontendServer;
