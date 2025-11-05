@@ -48,23 +48,48 @@ class EmailService {
                 'reset': '您正在重置密码，验证码是：'
             };
 
-            const mailOptions = {
-                from: `"睿叮AI英语学习助手" <${process.env.SMTP_USER}>`,
-                to: email,
-                subject: subjects[type] || subjects['register'],
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #667eea;">睿叮AI英语学习助手</h2>
-                        <p>${messages[type] || messages['register']}</p>
-                        <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #667eea;">
-                            ${code}
-                        </div>
-                        <p style="color: #999; margin-top: 20px;">验证码10分钟内有效，请勿泄露给他人。</p>
-                    </div>
-                `
-            };
+            // 检查SMTP是否配置
+            const smtpConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+            
+            if (smtpConfigured) {
+                // 如果配置了SMTP，尝试发送邮件
+                try {
+                    const mailOptions = {
+                        from: `"睿叮AI英语学习助手" <${process.env.SMTP_USER}>`,
+                        to: email,
+                        subject: subjects[type] || subjects['register'],
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2 style="color: #667eea;">睿叮AI英语学习助手</h2>
+                                <p>${messages[type] || messages['register']}</p>
+                                <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #667eea;">
+                                    ${code}
+                                </div>
+                                <p style="color: #999; margin-top: 20px;">验证码10分钟内有效，请勿泄露给他人。</p>
+                            </div>
+                        `
+                    };
 
-            await this._getTransporter().sendMail(mailOptions);
+                    await this._getTransporter().sendMail(mailOptions);
+                } catch (mailError) {
+                    console.error('邮件发送失败，使用开发模式:', mailError.message);
+                    // 邮件发送失败，降级到控制台模式
+                    console.log('\n======================');
+                    console.log(`📧 验证码 (${type})`);
+                    console.log(`邮箱: ${email}`);
+                    console.log(`验证码: ${code}`);
+                    console.log(`有效期: 10分钟`);
+                    console.log('======================\n');
+                }
+            } else {
+                // 未配置SMTP，使用开发模式（控制台输出）
+                console.log('\n======================');
+                console.log(`📧 验证码 (${type}) - 开发模式`);
+                console.log(`邮箱: ${email}`);
+                console.log(`验证码: ${code}`);
+                console.log(`有效期: 10分钟`);
+                console.log('======================\n');
+            }
 
             // 保存验证码记录
             await db.runAsync(
@@ -72,7 +97,7 @@ class EmailService {
                 [email, code, expiresAt.toISOString(), ipAddress, new Date().toISOString()]
             );
 
-            return { success: true, message: '验证码已发送到您的邮箱' };
+            return { success: true, message: smtpConfigured ? '验证码已发送到您的邮箱' : `验证码: ${code} (开发模式，请在控制台查看)` };
         } catch (error) {
             console.error('发送验证码失败:', error);
             return { success: false, error: '发送失败: ' + error.message };

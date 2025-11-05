@@ -656,7 +656,22 @@ function initVoices() {
 // 填充语音选择器
 function populateVoiceSelector(voices) {
     const voiceSelect = document.getElementById('voiceSelect');
-    if (!voiceSelect) return;
+    if (!voiceSelect) {
+        console.warn('⚠️ voiceSelect元素未找到，稍后重试...');
+        // 如果元素还没加载，等待一下再试
+        setTimeout(() => {
+            const retrySelect = document.getElementById('voiceSelect');
+            if (retrySelect) {
+                console.log('✅ 重试成功，开始填充语音选择器');
+                populateVoiceSelector(voices);
+            } else {
+                console.error('❌ voiceSelect元素始终未找到');
+            }
+        }, 500);
+        return;
+    }
+    
+    console.log('🎤 开始填充语音选择器，共', voices.length, '个语音');
     
     voiceSelect.innerHTML = '';
     
@@ -918,8 +933,16 @@ function speakWord(word) {
     if (word) speak(word, { rate: 0.8 });
 }
 
-// 初始化
-initVoices();
+// 初始化 - 确保DOM加载完成后再初始化语音
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('📢 DOM加载完成，初始化语音系统...');
+        initVoices();
+    });
+} else {
+    console.log('📢 DOM已就绪，立即初始化语音系统...');
+    initVoices();
+}
 </script>
 
 <!-- 设备管理弹窗 -->
