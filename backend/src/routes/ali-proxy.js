@@ -64,6 +64,99 @@ router.post('/test-api-key', async (req, res) => {
     }
 });
 
+// OCR 图像识别代理
+router.post('/ocr', async (req, res) => {
+    try {
+        const { image, prompt } = req.body;
+        
+        console.log('🔵 OCR API代理请求');
+        console.log('🔑 Authorization header:', req.headers.authorization ? '存在' : '不存在');
+        
+        // 从Authorization header获取API Key
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.error('❌ 缺少或无效的Authorization header');
+            return res.status(401).json({ error: 'API Key无效' });
+        }
+        
+        const apiKey = authHeader.replace('Bearer ', '');
+        console.log('使用API Key:', apiKey.substring(0, 10) + '...');
+        
+        // 构建请求数据
+        const requestData = {
+            model: 'qwen-vl-plus',
+            messages: [{
+                role: 'user',
+                content: [
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: image
+                        }
+                    },
+                    {
+                        type: 'text',
+                        text: prompt
+                    }
+                ]
+            }]
+        };
+        
+        // 使用OpenAI兼容模式的API
+        const options = {
+            hostname: 'dashscope.aliyuncs.com',
+            path: '/compatible-mode/v1/chat/completions',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            }
+        };
+        
+        console.log('🌐 转发到:', `https://${options.hostname}${options.path}`);
+        
+        // 发送请求到阿里云
+        const apiReq = https.request(options, (apiRes) => {
+            let responseData = '';
+            
+            apiRes.on('data', (chunk) => {
+                responseData += chunk;
+            });
+            
+            apiRes.on('end', () => {
+                console.log('✅ OCR响应状态:', apiRes.statusCode);
+                
+                if (apiRes.statusCode === 401) {
+                    return res.status(401).json({ error: 'API Key无效' });
+                }
+                
+                // 转发响应
+                res.status(apiRes.statusCode).send(responseData);
+            });
+        });
+        
+        apiReq.on('error', (error) => {
+            console.error('❌ OCR API请求失败:', error);
+            res.status(500).json({ 
+                error: '调用OCR服务失败', 
+                details: error.message 
+            });
+        });
+        
+        // 发送请求数据
+        const jsonData = JSON.stringify(requestData);
+        apiReq.write(jsonData);
+        apiReq.end();
+        
+    } catch (error) {
+        console.error('❌ OCR代理请求处理失败:', error);
+        res.status(500).json({ 
+            error: 'OCR代理请求失败', 
+            details: error.message 
+        });
+    }
+});
+
 // 阿里云API代理 - 直接转发请求
 router.post('/aigc/*', async (req, res) => {
     try {

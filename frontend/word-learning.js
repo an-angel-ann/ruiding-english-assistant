@@ -102,7 +102,7 @@ async function handleWordImageFile(file) {
             
             if (words.length === 0) {
                 hideLoading();
-                alert('未识别到有效的英文单词');
+                await showWarning('未识别到有效的英文单词', '识别失败');
                 return;
             }
             
@@ -123,14 +123,15 @@ async function handleWordImageFile(file) {
             message += '，是否开始学习？';
             
             // 自动开始学习
-            if (confirm(message)) {
+            const confirmed = await showConfirm(message, '开始学习');
+            if (confirmed) {
                 await startWordLearning();
             }
             
         } catch (error) {
             hideLoading();
             console.error('识别失败:', error);
-            alert('识别失败：' + error.message);
+            await showError('识别失败：' + error.message, '识别失败');
         }
     };
     reader.readAsDataURL(file);
@@ -142,7 +143,7 @@ async function startWordLearning() {
     const text = wordInputArea.value.trim();
     
     if (!text) {
-        alert('请输入要学习的单词！');
+        await showWarning('请输入要学习的单词！', '提示');
         return;
     }
     
@@ -156,12 +157,12 @@ async function startWordLearning() {
     recognizedWords = [...new Set(words)];
     
     if (recognizedWords.length === 0) {
-        alert('没有找到有效的英文单词，请检查输入！');
+        await showWarning('没有找到有效的英文单词，请检查输入！', '输入错误');
         return;
     }
     
     if (recognizedWords.length > 20) {
-        alert('单词数量超过20个，只会使用前20个单词进行学习');
+        await showWarning('单词数量超过20个，只会使用前20个单词进行学习', '提示');
         recognizedWords = recognizedWords.slice(0, 20);
     }
     
@@ -173,7 +174,7 @@ async function startWordLearning() {
         
         if (wordDetailsData.length === 0) {
             hideLoading();
-            alert('单词信息获取失败，请重试');
+            await showError('单词信息获取失败，请重试', '获取失败');
             return;
         }
         
@@ -189,7 +190,7 @@ async function startWordLearning() {
         
     } catch (error) {
         hideLoading();
-        alert('处理失败：' + error.message);
+        await showError('处理失败：' + error.message, '处理失败');
     }
 }
 
@@ -803,7 +804,7 @@ function createWordDetailModal() {
 }
 
 // 显示单词详情
-function showWordDetail(word) {
+async function showWordDetail(word) {
     // 清理单词（去除可能的空格和特殊字符）
     const cleanWord = word.trim().toLowerCase();
     console.log('查找单词:', cleanWord, '单词列表:', wordDetailsData.map(w => w.word));
@@ -832,7 +833,7 @@ function showWordDetail(word) {
 
     if (!detail) {
         console.error('未找到单词:', cleanWord);
-        alert(`未找到该单词的详细信息：${word}\n\n请检查单词是否存在于学习列表中。`);
+        await showError(`未找到该单词的详细信息：${word}\n\n请检查单词是否存在于学习列表中。`, '未找到单词');
         return;
     }
 
@@ -1465,14 +1466,14 @@ async function exportWordLearning() {
             
             if (result.success) {
                 console.log('✅ 导出成功！文件路径:', result.filePath);
-                alert(`✅ 导出成功！\n\n文件已保存至：\n${result.filePath}`);
+                await showSuccess(`导出成功！\n\n文件已保存至：\n${result.filePath}`, '导出成功');
             } else {
                 console.error('❌ 保存失败:', result.error);
-                alert(`❌ 保存失败：${result.error || '未知错误'}`);
+                await showError(`保存失败：${result.error || '未知错误'}`, '导出失败');
             }
         } catch (error) {
             console.error('❌ 导出失败:', error);
-            alert(`❌ 导出失败：${error.message}`);
+            await showError(`导出失败：${error.message}`, '导出失败');
         }
     } else {
         // 浏览器环境
@@ -1496,7 +1497,7 @@ async function exportWordLearning() {
             
             setTimeout(() => URL.revokeObjectURL(url), 100);
             
-            alert('✅ 导出成功！\n文件已保存到下载文件夹');
+            await showSuccess('导出成功！\n文件已保存到下载文件夹', '导出成功');
         }
     }
 }

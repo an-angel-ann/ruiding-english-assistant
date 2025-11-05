@@ -112,6 +112,7 @@ async function callAliOCR(imageBase64) {
         const apiKey = window.apiKey || localStorage.getItem('apiKey') || 'sk-be5a76fb81e844e0984fac68638bc69c';
 
         console.log('正在调用OCR API识别文本...');
+        console.log('使用API Key:', apiKey ? apiKey.substring(0, 10) + '...' : '无');
         
         // 确保是完整的data URL格式
         let imageDataUrl = imageBase64;
@@ -121,30 +122,20 @@ async function callAliOCR(imageBase64) {
         
         const ocrPrompt = "请识别这张图片中的所有英文文本，保持原文格式输出。只输出识别到的英文文本内容，不要添加任何解释或说明。";
         
-        // 使用OpenAI兼容模式的API
-        const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        // 通过后端代理调用（与翻译API保持一致）
+        const backendURL = getBackendURL();
+        const fullUrl = `${backendURL}/api/v1/services/ocr`;
+        console.log('🔗 OCR API URL:', fullUrl);
+        
+        const response = await fetch(fullUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'qwen-vl-plus',
-                messages: [{
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'image_url',
-                            image_url: {
-                                url: imageDataUrl
-                            }
-                        },
-                        {
-                            type: 'text',
-                            text: ocrPrompt
-                        }
-                    ]
-                }]
+                image: imageDataUrl,
+                prompt: ocrPrompt
             })
         });
         
@@ -153,7 +144,14 @@ async function callAliOCR(imageBase64) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('OCR API错误响应:', errorText);
-            throw new Error(`OCR识别失败 (${response.status})`);
+            
+            if (response.status === 401) {
+                throw new Error('API Key无效，请检查您的API Key是否正确');
+            } else if (response.status === 400) {
+                throw new Error('请求格式错误，请确保已开通qwen-vl-plus模型');
+            } else {
+                throw new Error(`OCR识别失败 (${response.status})`);
+            }
         }
         
         const ocrData = await response.json();
