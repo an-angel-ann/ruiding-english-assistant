@@ -79,7 +79,25 @@ function createSplashWindow() {
         }
     });
 
+    // 确定视频文件路径
+    let videoPath;
+    if (app.isPackaged) {
+        // 打包后从 app.asar.unpacked 加载
+        videoPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'welcomeflash.mp4');
+    } else {
+        // 开发模式从项目根目录加载
+        videoPath = path.join(__dirname, '..', 'welcomeflash.mp4');
+    }
+    
+    log(`视频文件路径: ${videoPath}`);
+    log(`视频文件是否存在: ${fs.existsSync(videoPath)}`);
+
     splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+    
+    // 等待页面加载完成后发送视频路径
+    splashWindow.webContents.on('did-finish-load', () => {
+        splashWindow.webContents.send('video-path', videoPath);
+    });
 
     splashWindow.on('closed', () => {
         splashWindow = null;

@@ -824,29 +824,48 @@ function populateVoiceSelector(voices) {
         });
     });
     
-    // 添加选项
-    Object.keys(categories).forEach(category => {
-        if (categories[category].length > 0) {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = category;
-            
-            categories[category].forEach(({voice, index}) => {
-                const option = document.createElement('option');
-                option.value = index;
+    // 检查是否有任何英语语音
+    const totalEnglishVoices = Object.values(categories).reduce((sum, cat) => sum + cat.length, 0);
+    
+    if (totalEnglishVoices === 0) {
+        // 没有英语语音，显示提示
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '⚠️ 未检测到英语语音，请安装 Windows 英语语音包';
+        option.disabled = true;
+        option.selected = true;
+        voiceSelect.appendChild(option);
+        
+        console.warn('⚠️ 系统未安装英语语音包！');
+        console.log('💡 解决方案：');
+        console.log('1. 打开 Windows 设置 -> 时间和语言 -> 语音');
+        console.log('2. 点击"添加语音" -> 选择英语（美国）或英语（英国）');
+        console.log('3. 下载并安装语音包后重启应用');
+    } else {
+        // 添加选项
+        Object.keys(categories).forEach(category => {
+            if (categories[category].length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
                 
-                // 为Google语音添加VPN标注
-                const vpnTag = voice.name.includes('Google') ? ' 🌐需VPN' : '';
-                option.textContent = `${voice.name} (${voice.lang})${vpnTag}`;
+                categories[category].forEach(({voice, index}) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    
+                    // 为Google语音添加VPN标注
+                    const vpnTag = voice.name.includes('Google') ? ' 🌐需VPN' : '';
+                    option.textContent = `${voice.name} (${voice.lang})${vpnTag}`;
+                    
+                    if (selectedVoice && selectedVoice.name === voice.name) {
+                        option.selected = true;
+                    }
+                    optgroup.appendChild(option);
+                });
                 
-                if (selectedVoice && selectedVoice.name === voice.name) {
-                    option.selected = true;
-                }
-                optgroup.appendChild(option);
-            });
-            
-            voiceSelect.appendChild(optgroup);
-        }
-    });
+                voiceSelect.appendChild(optgroup);
+            }
+        });
+    }
 }
 
 // 更改语音

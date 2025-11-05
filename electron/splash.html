@@ -50,14 +50,27 @@
     </style>
 </head>
 <body>
-    <video id="splash-video" autoplay muted>
-        <source src="../welcomeflash.mp4" type="video/mp4">
+    <video id="splash-video" muted>
+        <!-- 视频源将通过 JavaScript 动态设置 -->
     </video>
     <div class="loading-text">正在启动...</div>
 
     <script>
         const { ipcRenderer } = require('electron');
         const video = document.getElementById('splash-video');
+        
+        // 接收主进程发送的视频路径
+        ipcRenderer.on('video-path', (event, videoPath) => {
+            console.log('收到视频路径:', videoPath);
+            video.src = videoPath;
+            video.load();
+            video.play().catch(err => {
+                console.error('视频播放失败:', err);
+                setTimeout(() => {
+                    ipcRenderer.send('splash-finished');
+                }, 3000);
+            });
+        });
         
         // 视频播放结束后通知主进程
         video.addEventListener('ended', () => {
@@ -71,17 +84,6 @@
             setTimeout(() => {
                 ipcRenderer.send('splash-finished');
             }, 3000);
-        });
-
-        // 视频加载完成后开始播放
-        video.addEventListener('loadeddata', () => {
-            console.log('视频加载完成，开始播放');
-            video.play().catch(err => {
-                console.error('视频播放失败:', err);
-                setTimeout(() => {
-                    ipcRenderer.send('splash-finished');
-                }, 3000);
-            });
         });
 
         // 最长播放时间限制（防止视频过长）
