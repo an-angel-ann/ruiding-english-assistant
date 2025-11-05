@@ -1455,6 +1455,10 @@ if (window.electron && window.electron.ipcRenderer) {
 }
 
 async function checkSubscriptionAndShowPanel(useCache = false) {
+    console.log('🔍 [checkSubscriptionAndShowPanel] 开始检查');
+    console.log('   splashCompleted:', splashCompleted);
+    console.log('   useCache:', useCache);
+    
     if (!splashCompleted) {
         console.log('⏳ 等待启动动画完成...');
         return;
@@ -1464,6 +1468,9 @@ async function checkSubscriptionAndShowPanel(useCache = false) {
     const isSpecialAccount = localStorage.getItem('isSpecialAccount') === 'true';
     const userApiKey = localStorage.getItem('userApiKey');
     
+    console.log('   isSpecialAccount:', isSpecialAccount);
+    console.log('   userApiKey:', userApiKey ? userApiKey.substring(0, 10) + '...' : '无');
+    
     if (isSpecialAccount && userApiKey) {
         console.log('🔑 特殊账户模式，直接显示模式选择面板');
         showPanelBySubscription(true);
@@ -1471,6 +1478,7 @@ async function checkSubscriptionAndShowPanel(useCache = false) {
     }
     
     const token = localStorage.getItem('authToken');
+    console.log('   authToken:', token ? token.substring(0, 20) + '...' : '无');
     
     if (!token) {
         // 未登录，跳转到登录页

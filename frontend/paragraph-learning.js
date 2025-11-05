@@ -49,7 +49,7 @@ async function analyzeParagraphFromText() {
         const text = textInput.value.trim();
         
         if (!text) {
-            alert('请先粘贴英语段落或文章');
+            await showWarning('请先粘贴英语段落或文章', '提示');
             return;
         }
         
@@ -109,7 +109,7 @@ async function analyzeParagraphMaterial(imageFile) {
         updateFloatingVocab();
         
         if (!imageFile) {
-            alert('请选择图片文件');
+            await showWarning('请选择图片文件', '提示');
             return;
         }
         
@@ -135,7 +135,7 @@ async function analyzeParagraphMaterial(imageFile) {
         
         if (!imageBase64 || imageBase64.length < 100) {
             hideLoading();
-            alert('图片读取失败，请重试');
+            await showError('图片读取失败，请重试', '读取失败');
             return;
         }
         
@@ -155,7 +155,7 @@ async function analyzeParagraphMaterial(imageFile) {
         // 验证OCR结果
         if (!ocrText || ocrText.trim().length === 0) {
             hideLoading();
-            alert('未能识别到文字内容，请重新上传清晰的图片');
+            await showWarning('未能识别到文字内容，请重新上传清晰的图片', '识别失败');
             return;
         }
         
@@ -163,7 +163,7 @@ async function analyzeParagraphMaterial(imageFile) {
         const invalidResponses = ['You are a helpful assistant', 'I am a helpful assistant', 'How can I help you'];
         if (invalidResponses.some(invalid => ocrText.includes(invalid))) {
             hideLoading();
-            alert('图片识别失败，可能是图片格式问题。建议使用"方式二：粘贴文本"功能。');
+            await showError('图片识别失败，可能是图片格式问题。建议使用"方式二：粘贴文本"功能。', '识别失败');
             console.error('❌ OCR返回了无效结果:', ocrText);
             return;
         }
@@ -221,16 +221,14 @@ async function analyzeParagraphMaterial(imageFile) {
         hideLoading();
         hideSentenceAnimation();
         console.error('段落分析失败:', error);
-        alert('段落分析失败: ' + error.message);
+        await showError('段落分析失败: ' + error.message, '分析失败');
     }
 }
 
-// 显示步骤一：通篇浏览
+// 显示段落学习界面
 function showOverviewPanel() {
     document.getElementById('paragraphUploadPanel').style.display = 'none';
     document.getElementById('paragraphOverviewPanel').style.display = 'block';
-    
-    // 显示悬浮生词本球
     document.getElementById('floatingVocabBall').style.display = 'block';
     
     // 显示全文（支持生词选择）
@@ -1029,7 +1027,7 @@ function highlightSelectedWord(element, word) {
 }
 
 // 检查句义辨别答案（检查所有组）
-function checkMeaningAnswers() {
+async function checkMeaningAnswers() {
     const paragraph = paragraphData.paragraphs[currentParagraphIndex];
     const totalSentences = paragraph.sentences.length;
     let allCorrect = true;
@@ -1038,7 +1036,7 @@ function checkMeaningAnswers() {
     // 检查所有句子是否都已匹配
     for (let i = 0; i < totalSentences; i++) {
         if (allGroupAnswers[i] === undefined) {
-            alert('请完成所有句子的匹配');
+            await showWarning('请完成所有句子的匹配', '提示');
             return;
         }
         
@@ -1061,7 +1059,7 @@ function checkMeaningAnswers() {
             nextBtn.style.display = 'inline-block';
         }, 1500);
     } else {
-        alert(`有 ${errors.length} 处错误，请查看红色标记的位置`);
+        await showWarning(`有 ${errors.length} 处错误，请查看红色标记的位置`, '答题提示');
     }
 }
 
@@ -1410,7 +1408,7 @@ function selectSectionConnection(sentenceIdx, sectionIdx) {
 }
 
 // 检查结构分析答案（简化版：只检查句群连线）
-function checkStructureAnswers() {
+async function checkStructureAnswers() {
     const paragraph = paragraphData.paragraphs[currentParagraphIndex];
     let allCorrect = true;
     const errors = [];
@@ -1469,7 +1467,7 @@ function checkStructureAnswers() {
             nextBtn.style.display = 'inline-block';
         }, 1500);
     } else {
-        alert(`有 ${errors.length} 处错误：\n${errors.join('\n')}`);
+        await showWarning(`有 ${errors.length} 处错误：\n${errors.join('\n')}`, '答题提示');
         setTimeout(() => {
             const allCards = document.querySelectorAll('.sentence-analysis-item');
             allCards.forEach(card => {
@@ -1481,7 +1479,7 @@ function checkStructureAnswers() {
 }
 
 // 旧版本的检查函数（保留以防需要）
-function checkStructureAnswersOld() {
+async function checkStructureAnswersOld() {
     const dropZones = document.querySelectorAll('.section-drop-zone');
     let allCorrect = true;
     const errors = [];
@@ -1521,7 +1519,7 @@ function checkStructureAnswersOld() {
             nextBtn.style.display = 'inline-block';
         }, 1500);
     } else {
-        alert(`有 ${errors.length} 处错误（位置：${errors.join(', ')}），请查看红色标记`);
+        await showWarning(`有 ${errors.length} 处错误（位置：${errors.join(', ')}），请查看红色标记`, '答题提示');
         setTimeout(() => {
             document.querySelectorAll('.section-drop-zone').forEach(zone => {
                 // 恢复原样式
@@ -1666,7 +1664,7 @@ function updateReviewOrder() {
 }
 
 // 检查段落自查答案（适配单句排序）
-function checkReviewAnswers() {
+async function checkReviewAnswers() {
     const cards = document.querySelectorAll('.review-sentence-card');
     let allCorrect = true;
     const errors = [];
@@ -1717,7 +1715,7 @@ function checkReviewAnswers() {
             }
         }, 1500);
     } else {
-        alert(`有 ${errors.length} 处顺序错误（位置：${errors.join(', ')}），请查看红色标记`);
+        await showWarning(`有 ${errors.length} 处顺序错误（位置：${errors.join(', ')}），请查看红色标记`, '答题提示');
         setTimeout(() => {
             cards.forEach(card => {
                 // 恢复原样式
@@ -1804,7 +1802,7 @@ async function showComprehensionPanel() {
     } catch (error) {
         hideSentenceAnimation();
         hideLoading();
-        alert('生成题目失败，请重试');
+        await showError('生成题目失败，请重试', '生成失败');
         console.error(error);
     }
 }
@@ -1970,7 +1968,7 @@ function displayComprehensionQuestions(questions) {
 }
 
 // 检查理解题答案
-function checkComprehensionAnswers() {
+async function checkComprehensionAnswers() {
     const questions = window.currentComprehensionQuestions;
     let allCorrect = true;
     const errors = [];
@@ -2020,7 +2018,7 @@ function checkComprehensionAnswers() {
             nextBtn.style.display = 'inline-block';
         }, 1500);
     } else {
-        alert(`有 ${errors.length} 题答错，请查看标记并重新作答`);
+        await showWarning(`有 ${errors.length} 题答错，请查看标记并重新作答`, '答题提示');
         setTimeout(() => {
             document.querySelectorAll('.comprehension-question').forEach(q => {
                 q.style.borderLeft = '4px solid #667eea';
@@ -2160,7 +2158,7 @@ function setupSummaryDragAndDrop() {
 }
 
 // 检查步骤五的匹配答案
-function checkSummaryAnswers() {
+async function checkSummaryAnswers() {
     const dropZones = document.querySelectorAll('.summary-drop-zone');
     let allCorrect = true;
     const errors = [];
@@ -2200,7 +2198,7 @@ function checkSummaryAnswers() {
             nextBtn.style.display = 'inline-block';
         }, 1500);
     } else {
-        alert(`有 ${errors.length} 处错误，请查看标记并重新匹配`);
+        await showWarning(`有 ${errors.length} 处错误，请查看标记并重新匹配`, '答题提示');
         setTimeout(() => {
             document.querySelectorAll('.paragraph-item').forEach(item => {
                 item.style.borderLeft = '4px solid #667eea';
@@ -2341,14 +2339,14 @@ async function exportParagraphLearning() {
             
             if (result.success) {
                 console.log('✅ 导出成功！文件路径:', result.filePath);
-                alert(`✅ 导出成功！\n\n文件已保存至：\n${result.filePath}`);
+                await showSuccess(`导出成功！\n\n文件已保存至：\n${result.filePath}`, '导出成功');
             } else {
                 console.error('❌ 保存失败:', result.error);
-                alert(`❌ 保存失败：${result.error || '未知错误'}`);
+                await showError(`保存失败：${result.error || '未知错误'}`, '导出失败');
             }
         } catch (error) {
             console.error('❌ 导出失败:', error);
-            alert(`❌ 导出失败：${error.message}`);
+            await showError(`导出失败：${error.message}`, '导出失败');
         }
     } else {
         // 浏览器环境：使用传统下载方式
@@ -2373,7 +2371,7 @@ async function exportParagraphLearning() {
             setTimeout(() => URL.revokeObjectURL(url), 100);
             
             console.log('✅ 导出成功！');
-            alert('✅ 导出成功！\n文件已保存到下载文件夹');
+            await showSuccess('导出成功！\n文件已保存到下载文件夹', '导出成功');
         }
     }
 }
