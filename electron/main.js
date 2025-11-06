@@ -380,14 +380,17 @@ function createWindow() {
     // 加载应用
     mainWindow.loadURL('http://localhost:8080');
     
-    // 页面加载完成后发送视频路径以显示启动动画（仅首次）
+    // 页面加载完成后发送视频路径以显示启动动画
     let pageLoadCount = 0;
+    let splashEventSent = false; // 标记事件是否已发送
+    
     mainWindow.webContents.on('did-finish-load', () => {
         pageLoadCount++;
-        log(`页面加载完成 (第${pageLoadCount}次)，splashShown状态: ${splashShown}`);
+        log(`页面加载完成 (第${pageLoadCount}次)，splashShown状态: ${splashShown}，事件已发送: ${splashEventSent}`);
         
-        // 只在应用首次启动时显示动画
-        if (!splashShown) {
+        // 只在第一次页面加载时发送事件，但等待足够长的时间确保前端准备好
+        if (!splashEventSent && pageLoadCount === 1) {
+            splashEventSent = true;
             splashShown = true;
             
             // 确定视频文件路径
@@ -412,6 +415,7 @@ function createWindow() {
             log(`   视频 URL: ${videoUrl}`);
             
             // 延迟发送，确保页面完全加载和 IPC 监听器已注册
+            // 增加延迟到1秒，确保所有脚本都已加载
             setTimeout(() => {
                 log('   ✉️ 发送 show-splash 事件到渲染进程');
                 try {
@@ -420,9 +424,9 @@ function createWindow() {
                 } catch (error) {
                     log(`   ❌ 发送事件失败: ${error.message}`);
                 }
-            }, 500); // 增加延迟到500ms
-        } else {
-            log('⏭️ 启动动画已显示过，跳过');
+            }, 1000); // 增加延迟到1秒
+        } else if (pageLoadCount > 1) {
+            log('⏭️ 页面重新加载，跳过启动动画');
         }
     });
 
