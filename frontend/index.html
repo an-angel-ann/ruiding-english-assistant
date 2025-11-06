@@ -693,17 +693,30 @@
     </div>
 
     <!-- 全局变量 -->
+    <script>
+    // 🔍 调试：检查脚本加载顺序
+    console.log('📍 Step 1: 开始加载外部脚本之前');
+    </script>
     <script src="api-client.js?t=20251103170200"></script>
+    <script>console.log('📍 Step 2: api-client.js 加载完成');</script>
     <script src="app.js?t=20251103173200"></script>
+    <script>console.log('📍 Step 3: app.js 加载完成');</script>
     <script src="learning.js?v=7.13"></script>
+    <script>console.log('📍 Step 4: learning.js 加载完成');</script>
     <script src="word-learning.js?t=20251103105700"></script>
+    <script>console.log('📍 Step 5: word-learning.js 加载完成');</script>
     <script src="paragraph-learning.js?t=20251103130300"></script>
+    <script>console.log('📍 Step 6: paragraph-learning.js 加载完成');</script>
     
     <!-- 启动动画依赖函数 - 必须在启动动画脚本之前定义 -->
     <script>
+    console.log('📍 Step 7: 开始定义启动动画依赖函数');
+    
     // 全局变量（供启动动画脚本使用）
     let splashCompleted = false;
     let splashStarted = false;
+    
+    console.log('📍 Step 8: 全局变量已定义');
     
     // checkSubscriptionAndShowPanel 函数（由启动动画脚本调用）
     async function checkSubscriptionAndShowPanel(useCache = false) {
@@ -882,10 +895,13 @@
             console.error('后台验证失败:', error);
         }
     }
+    
+    console.log('📍 Step 9: 所有依赖函数已定义完成');
     </script>
     
     <!-- 启动动画处理脚本 - 必须在body内 -->
     <script>
+    console.log('📍 Step 10: 进入启动动画脚本');
     // ============================================
     // 启动动画处理脚本
     // ============================================
