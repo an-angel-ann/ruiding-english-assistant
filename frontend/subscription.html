@@ -376,8 +376,11 @@
         });
 
         async function subscribe(planType) {
+            console.log('🛒 开始订阅流程:', planType);
+            
             // 如果是新客福利且已购买，阻止操作
             if (planType === 'trial_7days_1yuan' && hasNewUserBenefit) {
+                console.log('❌ 新客福利已购买，阻止操作');
                 return;
             }
 
@@ -394,12 +397,17 @@
                 'yearly': '年度会员（¥299/年）'
             };
 
+            console.log('📋 显示确认对话框');
             const confirmed = await showConfirm(`确定要订阅${planNames[planType]}吗？`, '确认订阅');
+            console.log('✅ 用户确认结果:', confirmed);
+            
             if (!confirmed) {
+                console.log('❌ 用户取消订阅');
                 return;
             }
 
             try {
+                console.log('🌐 发送订单创建请求');
                 const response = await fetch(`${API_BASE_URL}/subscription/create-order`, {
                     method: 'POST',
                     headers: {
@@ -410,24 +418,32 @@
                 });
 
                 const data = await response.json();
+                console.log('📦 服务器响应:', data);
 
                 if (!response.ok) {
                     throw new Error(data.error || '创建订单失败');
                 }
 
                 if (data.success && data.paymentUrl) {
-                    console.log('跳转支付:', data.paymentUrl);
+                    console.log('💳 跳转支付页面:', data.paymentUrl);
                     
-                    // 直接在当前页面跳转到支付页面
-                    window.location.href = data.paymentUrl;
+                    // 使用setTimeout确保对话框完全关闭后再跳转
+                    setTimeout(() => {
+                        window.location.href = data.paymentUrl;
+                    }, 100);
                 } else if (data.success && data.order) {
-                    console.log('订单创建成功:', data.order);
+                    console.log('✅ 订单创建成功（无支付链接）:', data.order);
                     await showSuccess('订单创建成功！\n订单号: ' + data.order.orderId + '\n价格: ￥' + data.order.price + '\n\n请联系管理员完成支付。', '订单创建成功');
+                    
+                    // 显示成功消息后跳转回主页
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
                 } else {
                     throw new Error('未获取到支付信息');
                 }
             } catch (error) {
-                console.error('支付错误:', error);
+                console.error('❌ 支付错误:', error);
                 await showError('创建订单失败: ' + error.message, '订单创建失败');
             }
         }

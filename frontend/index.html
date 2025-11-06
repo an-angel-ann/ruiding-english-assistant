@@ -1144,6 +1144,9 @@ async function loadDevices() {
 async function removeDevice(deviceId) {
     const confirmed = await showConfirm('确定要解绑此设备吗？解绑后该设备将无法继续使用，需要重新登录。', '确认解绑');
     if (!confirmed) {
+        console.log('用户取消解绑');
+        // 关闭设备管理器，返回主页
+        closeDeviceManager();
         return;
     }
 
@@ -1158,7 +1161,12 @@ async function removeDevice(deviceId) {
         if (!response.ok) throw new Error('删除设备失败');
 
         await showSuccess('设备已解绑成功！', '解绑成功');
-        await loadDevices();
+        
+        // 关闭设备管理器
+        closeDeviceManager();
+        
+        // 重新加载设备列表（如果还在设备管理页面）
+        // await loadDevices();
 
     } catch (error) {
         console.error('删除设备错误:', error);

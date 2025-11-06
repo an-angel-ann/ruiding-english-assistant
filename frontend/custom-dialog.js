@@ -15,8 +15,8 @@ class CustomDialog {
                     {
                         text: '确定',
                         primary: true,
-                        onClick: () => {
-                            this.close();
+                        onClick: async () => {
+                            await this.close();
                             resolve(true);
                         }
                     }
@@ -36,16 +36,16 @@ class CustomDialog {
                     {
                         text: '取消',
                         primary: false,
-                        onClick: () => {
-                            this.close();
+                        onClick: async () => {
+                            await this.close();
                             resolve(false);
                         }
                     },
                     {
                         text: '确定',
                         primary: true,
-                        onClick: () => {
-                            this.close();
+                        onClick: async () => {
+                            await this.close();
                             resolve(true);
                         }
                     }
@@ -172,15 +172,20 @@ class CustomDialog {
 
     // 关闭对话框
     close() {
-        if (this.currentDialog) {
-            this.currentDialog.style.animation = 'fadeOut 0.2s ease';
-            setTimeout(() => {
-                if (this.currentDialog && this.currentDialog.parentNode) {
-                    this.currentDialog.parentNode.removeChild(this.currentDialog);
-                }
-                this.currentDialog = null;
-            }, 200);
-        }
+        return new Promise((resolve) => {
+            if (this.currentDialog) {
+                this.currentDialog.style.animation = 'fadeOut 0.2s ease';
+                setTimeout(() => {
+                    if (this.currentDialog && this.currentDialog.parentNode) {
+                        this.currentDialog.parentNode.removeChild(this.currentDialog);
+                    }
+                    this.currentDialog = null;
+                    resolve();
+                }, 200);
+            } else {
+                resolve();
+            }
+        });
     }
 
     // HTML 转义
