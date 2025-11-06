@@ -54,16 +54,29 @@ class XunhuPay {
                 maxContentLength: Infinity, // 无限制
                 maxBodyLength: Infinity, // 无限制
                 maxRedirects: 5,
+                responseType: 'text', // 先获取文本
                 validateStatus: function (status) {
                     return status >= 200 && status < 500; // 接受所有非5xx错误
                 }
             });
 
             console.log('✅ 虎皮椒响应状态:', response.status);
-            console.log('✅ 虎皮椒响应数据:', JSON.stringify(response.data).substring(0, 500));
+            console.log('✅ 虎皮椒响应文本长度:', response.data?.length || 0);
+            console.log('✅ 虎皮椒响应前500字符:', response.data?.substring(0, 500));
 
-            if (response.data.errcode === 0) {
-                const paymentUrl = response.data.url;
+            // 安全解析JSON
+            let responseData;
+            try {
+                responseData = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+                console.log('✅ JSON解析成功:', JSON.stringify(responseData).substring(0, 200));
+            } catch (parseError) {
+                console.error('❌ JSON解析失败:', parseError.message);
+                console.error('响应内容:', response.data?.substring(0, 1000));
+                throw new Error('支付接口返回格式错误');
+            }
+
+            if (responseData.errcode === 0) {
+                const paymentUrl = responseData.url;
                 console.log('💰 支付URL:', paymentUrl);
                 
                 return {
@@ -72,7 +85,7 @@ class XunhuPay {
                     amount: orderData.amount
                 };
             } else {
-                throw new Error(response.data.errmsg || '创建支付订单失败');
+                throw new Error(responseData.errmsg || '创建支付订单失败');
             }
 
         } catch (error) {

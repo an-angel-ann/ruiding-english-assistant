@@ -1319,15 +1319,25 @@ if (window.electron && window.electron.ipcRenderer) {
     // Electron环境，监听启动动画（注意：preload已经移除了event参数）
     window.electron.ipcRenderer.on('show-splash', (videoPath) => {
         console.log('🎬 收到启动动画事件，视频路径:', videoPath);
+        console.log('   videoPath类型:', typeof videoPath);
+        console.log('   videoPath值:', videoPath);
         splashStarted = true;
         
         // 显示启动动画覆盖层
         const splashOverlay = document.getElementById('splash-overlay');
         const splashVideo = document.getElementById('splash-video');
         
+        console.log('   splashOverlay:', splashOverlay ? '存在' : '不存在');
+        console.log('   splashVideo:', splashVideo ? '存在' : '不存在');
+        
         if (splashOverlay && splashVideo) {
+            console.log('   设置覆盖层显示为flex');
             splashOverlay.style.display = 'flex';
+            
+            console.log('   设置视频源:', videoPath);
             splashVideo.src = videoPath;
+            
+            console.log('   加载视频');
             splashVideo.load();
             
             console.log('▶️ 开始播放启动动画');
@@ -1335,6 +1345,8 @@ if (window.electron && window.electron.ipcRenderer) {
                 console.log('✅ 启动动画播放成功');
             }).catch(err => {
                 console.error('❌ 启动动画播放失败:', err);
+                console.error('   错误名称:', err.name);
+                console.error('   错误消息:', err.message);
                 splashOverlay.style.display = 'none';
                 splashCompleted = true;
                 checkSubscriptionAndShowPanel(useCache);
