@@ -373,8 +373,8 @@ function createWindow() {
     // 窗口准备好后显示
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
-        // 默认打开开发者工具以便调试
-        mainWindow.webContents.openDevTools();
+        // 默认打开开发者工具以便调试（已禁用，可通过 Cmd+Option+I 手动打开）
+        // mainWindow.webContents.openDevTools();
     });
 
     // 清除缓存，确保加载最新的前端代码
