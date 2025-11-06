@@ -699,17 +699,197 @@
     <script src="word-learning.js?t=20251103105700"></script>
     <script src="paragraph-learning.js?t=20251103130300"></script>
     
+    <!-- 启动动画依赖函数 - 必须在启动动画脚本之前定义 -->
+    <script>
+    // 全局变量（供启动动画脚本使用）
+    let splashCompleted = false;
+    let splashStarted = false;
+    
+    // checkSubscriptionAndShowPanel 函数（由启动动画脚本调用）
+    async function checkSubscriptionAndShowPanel(useCache = false) {
+        console.log('🔍 [checkSubscriptionAndShowPanel] 开始检查');
+        console.log('   splashCompleted:', splashCompleted);
+        console.log('   useCache:', useCache);
+        
+        if (!splashCompleted) {
+            console.log('⏳ 等待启动动画完成...');
+            return;
+        }
+        
+        // 检查是否是特殊账户
+        const isSpecialAccount = localStorage.getItem('isSpecialAccount') === 'true';
+        const userApiKey = localStorage.getItem('userApiKey');
+        
+        console.log('   isSpecialAccount:', isSpecialAccount);
+        console.log('   userApiKey:', userApiKey ? userApiKey.substring(0, 10) + '...' : '无');
+        
+        if (isSpecialAccount && userApiKey) {
+            console.log('🔑 特殊账户模式，直接显示模式选择面板');
+            showPanelBySubscription(true);
+            return;
+        }
+        
+        const token = localStorage.getItem('authToken');
+        console.log('   authToken:', token ? token.substring(0, 20) + '...' : '无');
+        
+        if (!token) {
+            // 未登录，跳转到登录页
+            console.log('❌ 未登录，跳转到登录页');
+            window.location.href = 'auth.html';
+            return;
+        }
+        
+        // 先使用缓存快速显示，然后再验证
+        const cachedSubscription = localStorage.getItem('subscriptionCache');
+        if (useCache && cachedSubscription) {
+            try {
+                const cache = JSON.parse(cachedSubscription);
+                const cacheAge = Date.now() - cache.timestamp;
+                
+                // 缓存有效期：30秒
+                if (cacheAge < 30000) {
+                    console.log('⚡ 使用缓存数据快速显示');
+                    
+                    // 如果是特殊账户，确保显示为有效订阅
+                    const hasValidSubscription = cache.isSpecialAccount ? true : cache.hasValidSubscription;
+                    console.log('📦 缓存数据 - 特殊账户:', cache.isSpecialAccount, '有效订阅:', hasValidSubscription);
+                    
+                    showPanelBySubscription(hasValidSubscription);
+                    
+                    // 后台验证订阅状态
+                    verifySubscriptionInBackground(token);
+                    return;
+                }
+            } catch (e) {
+                console.error('缓存解析失败:', e);
+            }
+        }
+        
+        try {
+            console.log('🔍 检查用户订阅状态...');
+            // 获取用户信息和订阅状态
+            const response = await fetch('http://localhost:3001/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                // Token 无效，跳转到登录页
+                console.log('❌ Token无效，跳转到登录页');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('subscriptionCache');
+                window.location.href = 'auth.html';
+                return;
+            }
+            
+            const data = await response.json();
+            console.log('📊 用户订阅状态:', data);
+            
+            // 检查是否是特殊账户
+            const isSpecialAccount = data.user && (data.user.isSpecialAccount || data.user.username === 'ruiding.vip.user' || data.user.email === 'ruiding.vip.user');
+            
+            // 检查是否有有效订阅
+            let hasValidSubscription = false;
+            if (isSpecialAccount) {
+                // 特殊账户永久有效
+                console.log('🔑 特殊账户，永久有效');
+                hasValidSubscription = true;
+            } else if (data.subscription) {
+                // 普通用户检查订阅到期时间
+                hasValidSubscription = new Date(data.subscription.endDate) > new Date();
+            }
+            
+            console.log('✅ 有效订阅:', hasValidSubscription);
+            
+            // 缓存订阅状态（包含特殊账户标记）
+            localStorage.setItem('subscriptionCache', JSON.stringify({
+                hasValidSubscription,
+                isSpecialAccount,
+                timestamp: Date.now()
+            }));
+            
+            showPanelBySubscription(hasValidSubscription);
+            
+        } catch (error) {
+            console.error('❌ 检查订阅状态失败:', error);
+            // 出错时默认显示订阅面板
+            showPanelBySubscription(false);
+        }
+    }
+
+    // 根据订阅状态显示面板
+    function showPanelBySubscription(hasValidSubscription) {
+        // 先隐藏所有面板
+        const allPanels = document.querySelectorAll('.panel');
+        allPanels.forEach(panel => {
+            panel.style.display = 'none';
+        });
+        
+        if (hasValidSubscription) {
+            // 有有效订阅，显示模式选择面板
+            console.log('→ 显示模式选择面板');
+            const modePanel = document.getElementById('modeSelectionPanel');
+            if (modePanel) {
+                modePanel.style.display = 'block';
+            }
+        } else {
+            // 没有有效订阅，显示订阅面板
+            console.log('→ 显示订阅面板');
+            const apiPanel = document.getElementById('apiKeyPanel');
+            if (apiPanel) {
+                apiPanel.style.display = 'block';
+            }
+        }
+    }
+
+    // 后台验证订阅状态
+    async function verifySubscriptionInBackground(token) {
+        try {
+            const response = await fetch('http://localhost:3001/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // 检查是否是特殊账户
+                const isSpecialAccount = data.user && (data.user.isSpecialAccount || data.user.username === 'ruiding.vip.user' || data.user.email === 'ruiding.vip.user');
+                
+                // 检查是否有有效订阅
+                let hasValidSubscription = false;
+                if (isSpecialAccount) {
+                    // 特殊账户永久有效
+                    console.log('🔄 后台验证 - 特殊账户，永久有效');
+                    hasValidSubscription = true;
+                } else if (data.subscription) {
+                    // 普通用户检查订阅到期时间
+                    hasValidSubscription = new Date(data.subscription.endDate) > new Date();
+                }
+                
+                // 更新缓存（包含特殊账户标记）
+                localStorage.setItem('subscriptionCache', JSON.stringify({
+                    hasValidSubscription,
+                    isSpecialAccount,
+                    timestamp: Date.now()
+                }));
+                
+                console.log('🔄 后台验证完成 - 特殊账户:', isSpecialAccount, '订阅状态:', hasValidSubscription);
+            }
+        } catch (error) {
+            console.error('后台验证失败:', error);
+        }
+    }
+    </script>
+    
     <!-- 启动动画处理脚本 - 必须在body内 -->
     <script>
     // ============================================
     // 启动动画处理脚本
     // ============================================
     console.log('🎯 [启动动画脚本] 脚本开始加载');
-
-    // 页面加载时检查订阅状态并决定显示哪个面板
-    // 延迟执行，等待启动动画播放完成
-    let splashCompleted = false;
-    let splashStarted = false;
 
     // 检查URL参数，判断是否使用缓存
     const urlParams = new URLSearchParams(window.location.search);
@@ -1436,185 +1616,5 @@ window.addEventListener('click', function(event) {
         }
     }
 })();
-</script>
-
-<script>
-// checkSubscriptionAndShowPanel 函数（由启动动画脚本调用）
-async function checkSubscriptionAndShowPanel(useCache = false) {
-    console.log('🔍 [checkSubscriptionAndShowPanel] 开始检查');
-    console.log('   splashCompleted:', splashCompleted);
-    console.log('   useCache:', useCache);
-    
-    if (!splashCompleted) {
-        console.log('⏳ 等待启动动画完成...');
-        return;
-    }
-    
-    // 检查是否是特殊账户
-    const isSpecialAccount = localStorage.getItem('isSpecialAccount') === 'true';
-    const userApiKey = localStorage.getItem('userApiKey');
-    
-    console.log('   isSpecialAccount:', isSpecialAccount);
-    console.log('   userApiKey:', userApiKey ? userApiKey.substring(0, 10) + '...' : '无');
-    
-    if (isSpecialAccount && userApiKey) {
-        console.log('🔑 特殊账户模式，直接显示模式选择面板');
-        showPanelBySubscription(true);
-        return;
-    }
-    
-    const token = localStorage.getItem('authToken');
-    console.log('   authToken:', token ? token.substring(0, 20) + '...' : '无');
-    
-    if (!token) {
-        // 未登录，跳转到登录页
-        console.log('❌ 未登录，跳转到登录页');
-        window.location.href = 'auth.html';
-        return;
-    }
-    
-    // 先使用缓存快速显示，然后再验证
-    const cachedSubscription = localStorage.getItem('subscriptionCache');
-    if (useCache && cachedSubscription) {
-        try {
-            const cache = JSON.parse(cachedSubscription);
-            const cacheAge = Date.now() - cache.timestamp;
-            
-            // 缓存有效期：30秒
-            if (cacheAge < 30000) {
-                console.log('⚡ 使用缓存数据快速显示');
-                
-                // 如果是特殊账户，确保显示为有效订阅
-                const hasValidSubscription = cache.isSpecialAccount ? true : cache.hasValidSubscription;
-                console.log('📦 缓存数据 - 特殊账户:', cache.isSpecialAccount, '有效订阅:', hasValidSubscription);
-                
-                showPanelBySubscription(hasValidSubscription);
-                
-                // 后台验证订阅状态
-                verifySubscriptionInBackground(token);
-                return;
-            }
-        } catch (e) {
-            console.error('缓存解析失败:', e);
-        }
-    }
-    
-    try {
-        console.log('🔍 检查用户订阅状态...');
-        // 获取用户信息和订阅状态
-        const response = await fetch('http://localhost:3001/api/auth/me', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            // Token 无效，跳转到登录页
-            console.log('❌ Token无效，跳转到登录页');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('subscriptionCache');
-            window.location.href = 'auth.html';
-            return;
-        }
-        
-        const data = await response.json();
-        console.log('📊 用户订阅状态:', data);
-        
-        // 检查是否是特殊账户
-        const isSpecialAccount = data.user && (data.user.isSpecialAccount || data.user.username === 'ruiding.vip.user' || data.user.email === 'ruiding.vip.user');
-        
-        // 检查是否有有效订阅
-        let hasValidSubscription = false;
-        if (isSpecialAccount) {
-            // 特殊账户永久有效
-            console.log('🔑 特殊账户，永久有效');
-            hasValidSubscription = true;
-        } else if (data.subscription) {
-            // 普通用户检查订阅到期时间
-            hasValidSubscription = new Date(data.subscription.endDate) > new Date();
-        }
-        
-        console.log('✅ 有效订阅:', hasValidSubscription);
-        
-        // 缓存订阅状态（包含特殊账户标记）
-        localStorage.setItem('subscriptionCache', JSON.stringify({
-            hasValidSubscription,
-            isSpecialAccount,
-            timestamp: Date.now()
-        }));
-        
-        showPanelBySubscription(hasValidSubscription);
-        
-    } catch (error) {
-        console.error('❌ 检查订阅状态失败:', error);
-        // 出错时默认显示订阅面板
-        showPanelBySubscription(false);
-    }
-}
-
-// 根据订阅状态显示面板
-function showPanelBySubscription(hasValidSubscription) {
-    // 先隐藏所有面板
-    const allPanels = document.querySelectorAll('.panel');
-    allPanels.forEach(panel => {
-        panel.style.display = 'none';
-    });
-    
-    if (hasValidSubscription) {
-        // 有有效订阅，显示模式选择面板
-        console.log('→ 显示模式选择面板');
-        const modePanel = document.getElementById('modeSelectionPanel');
-        if (modePanel) {
-            modePanel.style.display = 'block';
-        }
-    } else {
-        // 没有有效订阅，显示订阅面板
-        console.log('→ 显示订阅面板');
-        const apiPanel = document.getElementById('apiKeyPanel');
-        if (apiPanel) {
-            apiPanel.style.display = 'block';
-        }
-    }
-}
-
-// 后台验证订阅状态
-async function verifySubscriptionInBackground(token) {
-    try {
-        const response = await fetch('http://localhost:3001/api/auth/me', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            // 检查是否是特殊账户
-            const isSpecialAccount = data.user && (data.user.isSpecialAccount || data.user.username === 'ruiding.vip.user' || data.user.email === 'ruiding.vip.user');
-            
-            // 检查是否有有效订阅
-            let hasValidSubscription = false;
-            if (isSpecialAccount) {
-                // 特殊账户永久有效
-                console.log('🔄 后台验证 - 特殊账户，永久有效');
-                hasValidSubscription = true;
-            } else if (data.subscription) {
-                // 普通用户检查订阅到期时间
-                hasValidSubscription = new Date(data.subscription.endDate) > new Date();
-            }
-            
-            // 更新缓存（包含特殊账户标记）
-            localStorage.setItem('subscriptionCache', JSON.stringify({
-                hasValidSubscription,
-                isSpecialAccount,
-                timestamp: Date.now()
-            }));
-            
-            console.log('🔄 后台验证完成 - 特殊账户:', isSpecialAccount, '订阅状态:', hasValidSubscription);
-        }
-    } catch (error) {
-        console.error('后台验证失败:', error);
-    }
-}
 </script>
 </html>
