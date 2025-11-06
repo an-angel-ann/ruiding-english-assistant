@@ -377,8 +377,18 @@ function createWindow() {
         mainWindow.webContents.openDevTools();
     });
 
-    // 加载应用
-    mainWindow.loadURL('http://localhost:8080');
+    // 清除缓存，确保加载最新的前端代码
+    log('清除浏览器缓存...');
+    mainWindow.webContents.session.clearCache().then(() => {
+        log('✅ 浏览器缓存已清除');
+    }).catch(err => {
+        log(`⚠️ 清除缓存失败: ${err.message}`);
+    });
+
+    // 加载应用（添加时间戳防止缓存）
+    const timestamp = Date.now();
+    mainWindow.loadURL(`http://localhost:8080?_t=${timestamp}`);
+    log(`加载URL: http://localhost:8080?_t=${timestamp}`);
     
     // 页面加载完成后发送视频路径以显示启动动画
     let pageLoadCount = 0;
