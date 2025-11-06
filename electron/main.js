@@ -401,7 +401,7 @@ function createWindow() {
         // 只在第一次页面加载时发送事件，但等待足够长的时间确保前端准备好
         if (!splashEventSent && pageLoadCount === 1) {
             splashEventSent = true;
-            splashShown = true;
+            // 注意：不要在这里设置 splashShown = true，等事件真正发送后再设置
             
             // 确定视频文件路径
             let videoPath;
@@ -417,6 +417,7 @@ function createWindow() {
             
             if (!fs.existsSync(videoPath)) {
                 log(`   ❌ 视频文件不存在！`);
+                splashShown = true; // 视频不存在时也要设置标志，避免重复尝试
                 return;
             }
             
@@ -425,16 +426,18 @@ function createWindow() {
             log(`   视频 URL: ${videoUrl}`);
             
             // 延迟发送，确保页面完全加载和 IPC 监听器已注册
-            // 增加延迟到1秒，确保所有脚本都已加载
+            // 减少延迟到500ms，加快启动速度，同时避免页面重新加载的竞态条件
             setTimeout(() => {
                 log('   ✉️ 发送 show-splash 事件到渲染进程');
                 try {
                     mainWindow.webContents.send('show-splash', videoUrl);
-                    log('   ✅ show-splash 事件已发送');
+                    splashShown = true; // 事件发送成功后才设置标志
+                    log('   ✅ show-splash 事件已发送，splashShown 已设置为 true');
                 } catch (error) {
                     log(`   ❌ 发送事件失败: ${error.message}`);
+                    splashShown = true; // 发送失败也要设置标志，避免重复尝试
                 }
-            }, 1000); // 增加延迟到1秒
+            }, 500); // 减少延迟到500ms
         } else if (pageLoadCount > 1) {
             log('⏭️ 页面重新加载，跳过启动动画');
         }
