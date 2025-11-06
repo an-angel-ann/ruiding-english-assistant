@@ -346,6 +346,11 @@ function needsSmtpSetup() {
 // 创建主窗口
 function createWindow() {
     log('开始创建主窗口');
+    
+    // 重置启动动画标志
+    splashShown = false;
+    log('🔄 重置 splashShown 标志为 false');
+    
     try {
         mainWindow = new BrowserWindow({
         width: 1400,
@@ -672,6 +677,15 @@ async function startBackendServer() {
                 reject(chdirError);
                 return;
             }
+            
+            // 清除require缓存，确保加载最新代码
+            log('清除require缓存...');
+            Object.keys(require.cache).forEach(key => {
+                if (key.includes('backend')) {
+                    delete require.cache[key];
+                    log(`   清除缓存: ${path.basename(key)}`);
+                }
+            });
             
             // 直接require服务器脚本
             log('正在加载服务器脚本...');
