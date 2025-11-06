@@ -1341,6 +1341,11 @@ let splashStarted = false;
 const urlParams = new URLSearchParams(window.location.search);
 const useCache = urlParams.get('useCache') === 'true';
 
+// 立即执行，确保在页面加载时就注册监听器
+console.log('🚀 页面脚本开始执行');
+console.log('🔍 检查 window.electron:', window.electron ? '存在' : '不存在');
+console.log('🔍 检查 window.electronAPI:', window.electronAPI ? '存在' : '不存在');
+
 // 监听启动动画事件
 if (window.electron && window.electron.ipcRenderer) {
     console.log('🎬 Electron环境，准备监听启动动画');
