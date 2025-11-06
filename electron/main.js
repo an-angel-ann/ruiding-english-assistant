@@ -457,10 +457,94 @@ function createWindow() {
     }
 }
 
+// 检查端口是否被占用
+function checkPort(port) {
+    return new Promise((resolve) => {
+        const net = require('net');
+        const server = net.createServer();
+        
+        server.once('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                log(`⚠️ 端口 ${port} 已被占用`);
+                resolve(false);
+            } else {
+                resolve(true);
+            }
+        });
+        
+        server.once('listening', () => {
+            server.close();
+            log(`✅ 端口 ${port} 可用`);
+            resolve(true);
+        });
+        
+        server.listen(port);
+    });
+}
+
+// 杀死占用端口的进程
+async function killProcessOnPort(port) {
+    return new Promise((resolve) => {
+        const { exec } = require('child_process');
+        
+        log(`🔍 查找占用端口 ${port} 的进程...`);
+        
+        let command;
+        if (process.platform === 'win32') {
+            command = `netstat -ano | findstr :${port}`;
+        } else {
+            command = `lsof -ti:${port}`;
+        }
+        
+        exec(command, (error, stdout, stderr) => {
+            if (error || !stdout.trim()) {
+                log(`   未找到占用端口 ${port} 的进程`);
+                resolve();
+                return;
+            }
+            
+            const pids = stdout.trim().split('\n');
+            log(`   找到 ${pids.length} 个进程: ${pids.join(', ')}`);
+            
+            pids.forEach(pid => {
+                const killCmd = process.platform === 'win32' ? `taskkill /F /PID ${pid}` : `kill -9 ${pid}`;
+                exec(killCmd, (killError) => {
+                    if (killError) {
+                        log(`   ❌ 杀死进程 ${pid} 失败: ${killError.message}`);
+                    } else {
+                        log(`   ✅ 已杀死进程 ${pid}`);
+                    }
+                });
+            });
+            
+            // 等待进程被杀死
+            setTimeout(resolve, 1000);
+        });
+    });
+}
+
 // 启动后端服务器
-function startBackendServer() {
-    return new Promise((resolve, reject) => {
+async function startBackendServer() {
+    return new Promise(async (resolve, reject) => {
         const fs = require('fs');
+        
+        // 检查端口3001是否被占用
+        const portAvailable = await checkPort(3001);
+        if (!portAvailable) {
+            log('⚠️ 端口3001被占用，尝试清理...');
+            await killProcessOnPort(3001);
+            
+            // 再次检查
+            const stillOccupied = !(await checkPort(3001));
+            if (stillOccupied) {
+                const error = new Error('端口3001被占用且无法清理，请手动关闭占用该端口的程序');
+                log(`❌ ${error.message}`);
+                dialog.showErrorBox('端口占用', `${error.message}\n\n日志文件: ${logFile}`);
+                reject(error);
+                return;
+            }
+            log('✅ 端口3001已清理');
+        }
         
         // 获取正确的资源路径
         let backendPath;

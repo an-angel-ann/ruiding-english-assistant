@@ -286,8 +286,21 @@
                         })
                     });
                     
-                    const callbackData = await callbackResponse.json();
-                    console.log('📥 支付回调响应:', callbackData);
+                    console.log('📡 响应状态:', callbackResponse.status, callbackResponse.statusText);
+                    
+                    // 检查响应体是否为空
+                    const responseText = await callbackResponse.text();
+                    console.log('📄 响应文本:', responseText.substring(0, 200));
+                    
+                    let callbackData;
+                    try {
+                        callbackData = responseText ? JSON.parse(responseText) : {};
+                        console.log('📥 支付回调响应:', callbackData);
+                    } catch (parseError) {
+                        console.error('❌ JSON解析失败:', parseError);
+                        console.error('   响应内容:', responseText);
+                        throw new Error('服务器响应格式错误，请联系客服');
+                    }
                     
                     if (callbackResponse.ok) {
                         await showSuccess(`${callbackData.message}\n\n已增加 ${callbackData.subscription.daysAdded} 天会员时长！\n\n剩余时间：${callbackData.subscription.remainingDays} 天`, '支付成功');
